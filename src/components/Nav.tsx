@@ -17,6 +17,7 @@ export default function Nav() {
     { href: "/", label: t("nav.home") },
     { href: "/business-plan", label: t("nav.plans") },
     { href: "/support", label: t("nav.support") },
+    { href: "/contact", label: t("nav.contact") },
   ];
 
   async function handleLogout() {
@@ -50,12 +51,20 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <LangToggle />
           {CLOUD_MODE && (
-            <button
-              onClick={handleLogout}
-              className="text-sm text-slate-500 hover:text-slate-900"
-            >
-              {t("nav.logout")}
-            </button>
+            <>
+              <Link
+                href="/account"
+                className="text-sm text-slate-500 hover:text-slate-900"
+              >
+                {t("nav.account")}
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="text-sm text-slate-500 hover:text-slate-900"
+              >
+                {t("nav.logout")}
+              </button>
+            </>
           )}
         </div>
       </div>

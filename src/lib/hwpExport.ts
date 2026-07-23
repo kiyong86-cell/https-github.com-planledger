@@ -1,4 +1,4 @@
-import { BusinessPlanContent, PlanImage } from "./types";
+import { BusinessPlanContent, formatMoney, PlanImage } from "./types";
 
 const IMG_PREFIX = "app-image://";
 
@@ -73,12 +73,13 @@ function timetableHtml(content: BusinessPlanContent): string {
 }
 
 function budgetHtml(content: BusinessPlanContent): string {
+  const cur = content.budget?.currency === "USD" ? "USD" : "KRW";
   const total = Number(content.budget?.total) || 0;
   const items = content.budget?.items ?? [];
   const allocated = items.reduce((sum, i) => sum + Number(i.amount), 0);
   const remaining = total - allocated;
 
-  const header = `<tr><th style="${TH}">프로그램명</th><th style="${TH}">산출 내역</th><th style="${TH}">금액 (원)</th><th style="${TH}">비고</th></tr>`;
+  const header = `<tr><th style="${TH}">프로그램명</th><th style="${TH}">산출 내역</th><th style="${TH}">금액</th><th style="${TH}">비고</th></tr>`;
   const rows = items
     .map((item, i) => {
       const stripe = i % 2 === 1 ? `background-color:${LIGHT_GREEN};` : "";
@@ -86,16 +87,16 @@ function budgetHtml(content: BusinessPlanContent): string {
         item.name
       )}</td><td style="${CB}${stripe}color:${GRAY}">${esc(
         item.detail
-      )}</td><td style="${CB}${stripe}text-align:right">${Number(
-        item.amount
-      ).toLocaleString("ko-KR")}</td><td style="${CB}${stripe}color:${GRAY}">${esc(
+      )}</td><td style="${CB}${stripe}text-align:right">${esc(
+        formatMoney(Number(item.amount), cur)
+      )}</td><td style="${CB}${stripe}color:${GRAY}">${esc(
         item.note
       )}</td></tr>`;
     })
     .join("");
   const sumRow = items.length
-    ? `<tr><td style="${CB}background-color:${CREAM};color:${GREEN}"><strong>합계</strong></td><td style="${CB}background-color:${CREAM}"></td><td style="${CB}background-color:${CREAM};color:${GREEN};text-align:right"><strong>${allocated.toLocaleString(
-        "ko-KR"
+    ? `<tr><td style="${CB}background-color:${CREAM};color:${GREEN}"><strong>합계</strong></td><td style="${CB}background-color:${CREAM}"></td><td style="${CB}background-color:${CREAM};color:${GREEN};text-align:right"><strong>${esc(
+        formatMoney(allocated, cur)
       )}</strong></td><td style="${CB}background-color:${CREAM}"></td></tr>`
     : "";
   const table = items.length
@@ -103,11 +104,11 @@ function budgetHtml(content: BusinessPlanContent): string {
     : `<p style="color:${GRAY}">(배정된 프로그램 없음)</p>`;
 
   const remainColor = remaining < 0 ? "#C0392B" : GREEN_MID;
-  return `<p style="color:${GREEN}"><strong>총 예산: ${total.toLocaleString(
-    "ko-KR"
-  )}원</strong></p>${table}<p style="color:${remainColor}">남은 예산: ${remaining.toLocaleString(
-    "ko-KR"
-  )}원${remaining < 0 ? " (예산 초과)" : ""}</p>`;
+  return `<p style="color:${GREEN}"><strong>총 예산: ${esc(
+    formatMoney(total, cur)
+  )}</strong></p>${table}<p style="color:${remainColor}">남은 예산: ${esc(
+    formatMoney(remaining, cur)
+  )}${remaining < 0 ? " (예산 초과)" : ""}</p>`;
 }
 
 async function imagesHtmlAndResolver(images: PlanImage[]): Promise<{

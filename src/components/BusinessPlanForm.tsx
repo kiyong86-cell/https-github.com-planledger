@@ -10,6 +10,8 @@ import { useI18n } from "@/components/LangProvider";
 import {
   BudgetItem,
   BusinessPlanContent,
+  Currency,
+  formatMoney,
   PlanType,
   Timetable,
   TimetableCell,
@@ -165,6 +167,13 @@ export default function BusinessPlanForm({
     setContent((prev) => ({
       ...prev,
       budget: { ...prev.budget, total: Number(value) || 0 },
+    }));
+  }
+
+  function updateCurrency(currency: Currency) {
+    setContent((prev) => ({
+      ...prev,
+      budget: { ...prev.budget, currency },
     }));
   }
 
@@ -735,19 +744,34 @@ export default function BusinessPlanForm({
         </h2>
         <p className="mb-3 text-xs text-slate-400">{t("form.budget.hint")}</p>
 
-        <div className="mb-4">
-          <label className="mb-1 block text-sm font-medium text-slate-700">
-            {t("form.budget.total")}
-          </label>
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={content.budget.total || ""}
-            onChange={(e) => updateTotalBudget(e.target.value)}
-            placeholder={t("form.budget.totalPlaceholder")}
-            className="w-full max-w-xs rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-          />
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              {t("form.budget.total")}
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={content.budget.total || ""}
+              onChange={(e) => updateTotalBudget(e.target.value)}
+              placeholder={t("form.budget.totalPlaceholder")}
+              className="w-full max-w-xs rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              {t("form.budget.currency")}
+            </label>
+            <select
+              value={content.budget.currency}
+              onChange={(e) => updateCurrency(e.target.value as Currency)}
+              className="rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            >
+              <option value="KRW">{t("form.budget.krw")}</option>
+              <option value="USD">{t("form.budget.usd")}</option>
+            </select>
+          </div>
         </div>
 
         {content.budget.items.length > 0 && (
@@ -820,7 +844,7 @@ export default function BusinessPlanForm({
           <span className="text-slate-600">
             {t("form.budget.allocated")}:{" "}
             <strong className="text-slate-900">
-              {allocated.toLocaleString()}
+              {formatMoney(allocated, content.budget.currency)}
             </strong>
           </span>
           <span className="text-slate-600">
@@ -828,7 +852,7 @@ export default function BusinessPlanForm({
             <strong
               className={remaining < 0 ? "text-red-600" : "text-slate-900"}
             >
-              {remaining.toLocaleString()}
+              {formatMoney(remaining, content.budget.currency)}
             </strong>
             {remaining < 0 && (
               <span className="ml-1 text-xs text-red-600">

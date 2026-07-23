@@ -14,7 +14,12 @@ import {
   AlignmentType,
   HeadingLevel,
 } from "docx";
-import { BusinessPlanContent, PlanImage, Timetable } from "./types";
+import {
+  BusinessPlanContent,
+  formatMoney,
+  PlanImage,
+  Timetable,
+} from "./types";
 
 // 두레줄기 소개자료 문서에서 가져온 색상 팔레트
 const GREEN = "2C4A2E"; // 진한 녹색 (제목, 표 머리)
@@ -161,13 +166,14 @@ function timetableTable(timetable: Timetable): Table {
 }
 
 function budgetTable(content: BusinessPlanContent): Table {
+  const cur = content.budget.currency;
   const widths = [2200, 2900, 1500, 2426]; // 프로그램명 / 산출 내역 / 금액 / 비고
   const headerRow = new TableRow({
     tableHeader: true,
     children: [
       headerCell("프로그램명", widths[0]),
       headerCell("산출 내역", widths[1]),
-      headerCell("금액 (원)", widths[2]),
+      headerCell("금액", widths[2]),
       headerCell("비고", widths[3]),
     ],
   });
@@ -185,14 +191,10 @@ function budgetTable(content: BusinessPlanContent): Table {
             color: GRAY,
             fill: i % 2 === 1 ? LIGHT_GREEN : undefined,
           }),
-          bodyCell(
-            Number(item.amount).toLocaleString("ko-KR"),
-            widths[2],
-            {
-              align: AlignmentType.RIGHT,
-              fill: i % 2 === 1 ? LIGHT_GREEN : undefined,
-            }
-          ),
+          bodyCell(formatMoney(Number(item.amount), cur), widths[2], {
+            align: AlignmentType.RIGHT,
+            fill: i % 2 === 1 ? LIGHT_GREEN : undefined,
+          }),
           bodyCell(item.note, widths[3], {
             align: AlignmentType.LEFT,
             color: GRAY,
@@ -211,7 +213,7 @@ function budgetTable(content: BusinessPlanContent): Table {
     children: [
       bodyCell("합계", widths[0], { fill: CREAM, bold: true, color: GREEN }),
       bodyCell("", widths[1], { fill: CREAM }),
-      bodyCell(allocated.toLocaleString("ko-KR"), widths[2], {
+      bodyCell(formatMoney(allocated, cur), widths[2], {
         fill: CREAM,
         bold: true,
         color: GREEN,
@@ -284,6 +286,7 @@ export function buildPlanDocument(
   sectionNumber += 1;
   children.push(sectionHeading(`${sectionNumber}. 예산안`));
 
+  const cur = content.budget?.currency === "USD" ? "USD" : "KRW";
   const total = Number(content.budget?.total) || 0;
   const allocated = (content.budget?.items ?? []).reduce(
     (sum, item) => sum + Number(item.amount),
@@ -296,7 +299,7 @@ export function buildPlanDocument(
       spacing: { after: 120 },
       children: [
         new TextRun({
-          text: `총 예산: ${total.toLocaleString("ko-KR")}원`,
+          text: `총 예산: ${formatMoney(total, cur)}`,
           bold: true,
           size: 22,
           color: GREEN,
@@ -312,7 +315,7 @@ export function buildPlanDocument(
         spacing: { before: 120 },
         children: [
           new TextRun({
-            text: `남은 예산: ${remaining.toLocaleString("ko-KR")}원`,
+            text: `남은 예산: ${formatMoney(remaining, cur)}`,
             bold: true,
             size: 20,
             color: remaining < 0 ? "C0392B" : GREEN_MID,

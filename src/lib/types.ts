@@ -5,10 +5,19 @@ export type BudgetItem = {
   note: string; // 비고
 };
 
+export type Currency = "KRW" | "USD";
+
 export type Budget = {
   total: number; // 총 예산
+  currency: Currency; // 통화 (원/달러)
   items: BudgetItem[];
 };
+
+// 통화 표시 (예: 10000 → "10,000원" 또는 "$10,000")
+export function formatMoney(amount: number, currency: Currency): string {
+  const n = Number(amount).toLocaleString();
+  return currency === "USD" ? `$${n}` : `${n}원`;
+}
 
 export type PlanSection = {
   title: string; // 주제 (자유롭게 수정 가능)

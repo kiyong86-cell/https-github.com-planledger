@@ -1,7 +1,7 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/privacy"];
+const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/contact"];
 
 export async function middleware(request: NextRequest) {
   // 로컬 모드(Supabase 미설정)에서는 로그인 없이 모두 통과

@@ -101,11 +101,14 @@ const ko: Dict = {
   // 예산안
   "form.budget.title": "예산안",
   "form.budget.hint": "총 예산을 입력하고, 프로그램(항목)별로 배정 금액을 나눠보세요.",
-  "form.budget.total": "총 예산 (원)",
+  "form.budget.total": "총 예산",
   "form.budget.totalPlaceholder": "예) 1000000",
+  "form.budget.currency": "통화",
+  "form.budget.krw": "원 (₩)",
+  "form.budget.usd": "달러 ($)",
   "form.budget.colName": "프로그램명",
   "form.budget.colDetail": "산출 내역",
-  "form.budget.colAmount": "금액 (원)",
+  "form.budget.colAmount": "금액",
   "form.budget.colNote": "비고",
   "form.budget.namePlaceholder": "예) 다과비",
   "form.budget.detailPlaceholder": "예) 1인 1,000원 x 10명",
@@ -181,6 +184,35 @@ const ko: Dict = {
   // 개인정보처리방침
   "privacy.title": "개인정보처리방침",
   "privacy.toHome": "← 홈으로",
+
+  // 네비 추가
+  "nav.contact": "문의",
+  "nav.account": "계정",
+
+  // 문의하기
+  "contact.title": "문의하기",
+  "contact.intro": "궁금한 점이나 개선 요청이 있으면 언제든 보내주세요.",
+  "contact.emailLabel": "이메일",
+  "contact.subject": "제목",
+  "contact.subjectPlaceholder": "문의 제목",
+  "contact.message": "내용",
+  "contact.messagePlaceholder": "문의 내용을 적어주세요",
+  "contact.send": "메일 보내기",
+  "contact.note": "버튼을 누르면 메일 앱이 열립니다. 직접 위 주소로 보내셔도 됩니다.",
+
+  // 계정 / 회원탈퇴
+  "account.title": "계정 설정",
+  "account.email": "로그인 이메일",
+  "account.name": "이름 / 단체명",
+  "account.dangerTitle": "회원 탈퇴",
+  "account.dangerDesc": "탈퇴하면 계정과 작성한 모든 기획안·첨부 파일이 영구 삭제되며 되돌릴 수 없습니다.",
+  "account.deleteBtn": "회원 탈퇴하기",
+  "account.deleting": "탈퇴 처리 중...",
+  "account.confirm": "정말 탈퇴하시겠어요? 모든 데이터가 영구 삭제되며 되돌릴 수 없습니다.",
+  "account.confirmType": '확인을 위해 "삭제" 를 입력해주세요.',
+  "account.confirmWord": "삭제",
+  "account.deleteFailed": "탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.",
+  "account.deleted": "탈퇴가 완료되었습니다. 이용해주셔서 감사합니다.",
 };
 
 const en: Dict = {
@@ -267,6 +299,9 @@ const en: Dict = {
   "form.budget.hint": "Enter the total budget and split it across programs (items).",
   "form.budget.total": "Total budget",
   "form.budget.totalPlaceholder": "e.g. 1000000",
+  "form.budget.currency": "Currency",
+  "form.budget.krw": "KRW (₩)",
+  "form.budget.usd": "USD ($)",
   "form.budget.colName": "Program",
   "form.budget.colDetail": "Calculation",
   "form.budget.colAmount": "Amount",
@@ -340,6 +375,32 @@ const en: Dict = {
 
   "privacy.title": "Privacy Policy",
   "privacy.toHome": "← Home",
+
+  "nav.contact": "Contact",
+  "nav.account": "Account",
+
+  "contact.title": "Contact us",
+  "contact.intro": "Have a question or a feature request? Send it anytime.",
+  "contact.emailLabel": "Email",
+  "contact.subject": "Subject",
+  "contact.subjectPlaceholder": "Subject",
+  "contact.message": "Message",
+  "contact.messagePlaceholder": "Write your message",
+  "contact.send": "Send email",
+  "contact.note": "This opens your email app. You can also email the address above directly.",
+
+  "account.title": "Account settings",
+  "account.email": "Login email",
+  "account.name": "Name / Organization",
+  "account.dangerTitle": "Delete account",
+  "account.dangerDesc": "Deleting removes your account and all documents and attachments permanently. This cannot be undone.",
+  "account.deleteBtn": "Delete my account",
+  "account.deleting": "Deleting...",
+  "account.confirm": "Really delete? All your data will be permanently removed and cannot be recovered.",
+  "account.confirmType": 'Type "DELETE" to confirm.',
+  "account.confirmWord": "DELETE",
+  "account.deleteFailed": "Deletion failed. Please try again shortly.",
+  "account.deleted": "Your account has been deleted. Thank you for using the service.",
 };
 
 const DICTS: Record<Lang, Dict> = { ko, en };

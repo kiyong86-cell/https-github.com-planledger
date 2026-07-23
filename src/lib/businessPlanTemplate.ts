@@ -32,12 +32,15 @@ const TEMPLATES: Record<Lang, Record<PlanType, SectionDef[]>> = {
       { title: "팀 소개", hint: "핵심 인력의 역할과 경력을 소개하세요." },
     ],
     proposal: [
-      { title: "제안 배경", hint: "왜 이 제안을 하게 되었는지, 상대 기업의 어떤 니즈에 주목했는지 적으세요." },
-      { title: "제안 개요", hint: "무엇을 제안하는지 핵심을 한눈에 알 수 있게 요약하세요." },
-      { title: "기대 효과", hint: "제안을 받아들이면 상대 기업이 얻는 이점을 구체적으로 적으세요." },
-      { title: "추진 방안", hint: "어떻게 진행할지, 단계와 역할 분담을 정리하세요." },
-      { title: "협력 조건", hint: "비용, 기간, 협력 형태 등 조건을 정리하세요." },
-      { title: "회사 소개", hint: "우리 회사(또는 단체)의 강점과 실적을 소개하세요." },
+      { title: "제안 요약", hint: "무엇을 하는 단체(회사)인지, 무엇을 요청하는지, 무엇이 달라지는지, 왜 이 기업/기관인지 4가지로 한눈에 요약하세요." },
+      { title: "시작하게 된 배경", hint: "이 일을 왜 시작했는지, 어떤 문제에 주목했는지 이야기로 풀어주세요." },
+      { title: "함께하는 가치", hint: "제안 대상 기업/기관의 철학·가치와 우리 활동이 어떻게 맞닿는지 설명하세요." },
+      { title: "단체·회사 소개", hint: "단체명, 설립연도, 법적 지위, 소재지 등 기본 정보를 소개하세요." },
+      { title: "주요 인력", hint: "대표·핵심 인력의 역할과 경력을 소개하세요. (표로 정리하려면 일정표를 활용하세요)" },
+      { title: "핵심 사업 소개", hint: "우리가 하는 주요 사업·활동을 정리하세요." },
+      { title: "지원·협력 요청", hint: "구체적으로 무엇을 요청하는지 정리하세요. 금액은 아래 예산안에 작성하세요." },
+      { title: "기대 효과", hint: "이 제안이 받아들여지면 무엇이 달라지는지 구체적으로 적으세요." },
+      { title: "맺음말", hint: "함께하기를 바라는 마음을 담아 마무리하세요." },
     ],
   },
   en: {
@@ -58,12 +61,15 @@ const TEMPLATES: Record<Lang, Record<PlanType, SectionDef[]>> = {
       { title: "Team", hint: "Introduce key people, their roles and experience." },
     ],
     proposal: [
-      { title: "Background", hint: "Why you're making this proposal and which of their needs it addresses." },
-      { title: "Proposal Summary", hint: "Summarize what you propose at a glance." },
-      { title: "Expected Benefits", hint: "Concretely state what the company gains by accepting." },
-      { title: "Approach", hint: "How you'll proceed — phases and responsibilities." },
-      { title: "Terms", hint: "Cost, duration, form of collaboration, etc." },
-      { title: "About Us", hint: "Introduce your company's (or org's) strengths and track record." },
+      { title: "Proposal Summary", hint: "Summarize at a glance: what your org does, what you request, what changes, and why this company/partner." },
+      { title: "Why We Began", hint: "Tell the story of why you started and the problem you focus on." },
+      { title: "Shared Values", hint: "Explain how the partner's philosophy and values align with your work." },
+      { title: "About Us", hint: "Introduce basics: name, founding year, legal status, location." },
+      { title: "Our Team", hint: "Introduce key people, their roles and experience. (Use the timetable for a table.)" },
+      { title: "What We Do", hint: "Summarize your main programs and activities." },
+      { title: "Our Request", hint: "Clearly state what you're asking for. Put amounts in the Budget below." },
+      { title: "Expected Impact", hint: "Concretely state what will change if this proposal is accepted." },
+      { title: "Closing", hint: "Close with your hope to work together." },
     ],
   },
 };
@@ -92,7 +98,7 @@ export function emptyContent(
     planType,
     sections: template.map((s) => ({ title: s.title, body: "" })),
     timetable: emptyTimetable(),
-    budget: { total: 0, items: [] },
+    budget: { total: 0, currency: "KRW", items: [] },
     images: [],
   };
 }
@@ -115,6 +121,7 @@ export function normalizeContent(raw: unknown): BusinessPlanContent {
   const rawBudget = (data.budget ?? {}) as Record<string, unknown>;
   const budget = {
     total: Number(rawBudget.total) || 0,
+    currency: rawBudget.currency === "USD" ? ("USD" as const) : ("KRW" as const),
     items: Array.isArray(rawBudget.items)
       ? (rawBudget.items as Array<Record<string, unknown>>).map(
           (item): BudgetItem => ({
