@@ -54,7 +54,7 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { display_name: name } },
@@ -64,8 +64,15 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      // 이메일 인증이 꺼져 있는 프로젝트라면 가입 즉시 세션이 생기므로 바로 동기화 시도
-      await syncProfile(supabase);
+
+      if (data.session) {
+        // 이메일 인증이 꺼져 있는 프로젝트: 가입 즉시 세션이 생김 → 바로 로그인 처리
+        await syncProfile(supabase);
+        router.push("/");
+        router.refresh();
+        return;
+      }
+
       setMessage(
         "가입 확인 이메일을 보냈습니다. 이메일을 확인한 뒤 로그인해주세요."
       );
