@@ -8,52 +8,89 @@ import {
   TimetableCell,
   TimetableRow,
 } from "./types";
+import { Lang } from "./i18n";
 
-// 내부 기획안: 조직 안에서 공유하는 간단한 구성
-export const INTERNAL_TEMPLATE: PlanSection[] = [
-  { title: "사업 개요", body: "" },
-  { title: "목적 및 기대효과", body: "" },
-  { title: "세부 프로그램 내용", body: "" },
-  { title: "추진 일정", body: "" },
-];
+// [제목, 도움말] 쌍으로 언어별 템플릿을 정의한다.
+type SectionDef = { title: string; hint: string };
 
-// 외부 기획안: 투자·제출용 전체 구성
-export const EXTERNAL_TEMPLATE: PlanSection[] = [
-  { title: "사업 개요", body: "" },
-  { title: "문제 인식", body: "" },
-  { title: "시장 분석", body: "" },
-  { title: "제품/서비스 소개", body: "" },
-  { title: "사업 모델(수익 구조)", body: "" },
-  { title: "마케팅 전략", body: "" },
-  { title: "재무 계획", body: "" },
-  { title: "팀 소개", body: "" },
-];
-
-// 기본 제목에 대한 입력 도움말 (제목을 바꾸면 일반 안내로 대체됨)
-export const SECTION_HINTS: Record<string, string> = {
-  "사업 개요": "무엇을 하는 사업(행사)인지 한눈에 알 수 있도록 간단히 소개하세요.",
-  "목적 및 기대효과": "왜 이 사업을 하는지, 무엇을 기대하는지 적어보세요.",
-  "세부 프로그램 내용": "프로그램 구성과 진행 방식을 적어보세요.",
-  "추진 일정": "날짜별·단계별 일정을 정리하세요.",
-  "문제 인식": "고객이 겪고 있는 불편함이나 시장의 문제가 무엇인가요?",
-  "시장 분석": "목표 시장의 규모, 성장성, 경쟁 현황을 정리하세요.",
-  "제품/서비스 소개": "제공하는 제품이나 서비스의 핵심 기능과 차별점을 설명하세요.",
-  "사업 모델(수익 구조)": "어떻게 돈을 버는지, 가격 정책은 어떻게 되는지 설명하세요.",
-  "마케팅 전략": "고객을 어떻게 확보하고 홍보할 계획인가요?",
-  "재무 계획": "초기 투자금, 예상 매출/비용, 손익분기점 등을 정리하세요.",
-  "팀 소개": "핵심 인력의 역할과 경력을 소개하세요.",
+const TEMPLATES: Record<Lang, Record<PlanType, SectionDef[]>> = {
+  ko: {
+    internal: [
+      { title: "사업 개요", hint: "무엇을 하는 사업(행사)인지 한눈에 알 수 있도록 간단히 소개하세요." },
+      { title: "목적 및 기대효과", hint: "왜 이 사업을 하는지, 무엇을 기대하는지 적어보세요." },
+      { title: "세부 프로그램 내용", hint: "프로그램 구성과 진행 방식을 적어보세요." },
+      { title: "추진 일정", hint: "날짜별·단계별 일정을 정리하세요." },
+    ],
+    external: [
+      { title: "사업 개요", hint: "무엇을 하는 사업(행사)인지 한눈에 알 수 있도록 간단히 소개하세요." },
+      { title: "문제 인식", hint: "고객이 겪고 있는 불편함이나 시장의 문제가 무엇인가요?" },
+      { title: "시장 분석", hint: "목표 시장의 규모, 성장성, 경쟁 현황을 정리하세요." },
+      { title: "제품/서비스 소개", hint: "제공하는 제품이나 서비스의 핵심 기능과 차별점을 설명하세요." },
+      { title: "사업 모델(수익 구조)", hint: "어떻게 돈을 버는지, 가격 정책은 어떻게 되는지 설명하세요." },
+      { title: "마케팅 전략", hint: "고객을 어떻게 확보하고 홍보할 계획인가요?" },
+      { title: "재무 계획", hint: "초기 투자금, 예상 매출/비용, 손익분기점 등을 정리하세요." },
+      { title: "팀 소개", hint: "핵심 인력의 역할과 경력을 소개하세요." },
+    ],
+    proposal: [
+      { title: "제안 배경", hint: "왜 이 제안을 하게 되었는지, 상대 기업의 어떤 니즈에 주목했는지 적으세요." },
+      { title: "제안 개요", hint: "무엇을 제안하는지 핵심을 한눈에 알 수 있게 요약하세요." },
+      { title: "기대 효과", hint: "제안을 받아들이면 상대 기업이 얻는 이점을 구체적으로 적으세요." },
+      { title: "추진 방안", hint: "어떻게 진행할지, 단계와 역할 분담을 정리하세요." },
+      { title: "협력 조건", hint: "비용, 기간, 협력 형태 등 조건을 정리하세요." },
+      { title: "회사 소개", hint: "우리 회사(또는 단체)의 강점과 실적을 소개하세요." },
+    ],
+  },
+  en: {
+    internal: [
+      { title: "Overview", hint: "Briefly introduce what this project (or event) is." },
+      { title: "Goals & Expected Outcomes", hint: "Explain why you're doing this and what you expect." },
+      { title: "Program Details", hint: "Describe the program structure and how it runs." },
+      { title: "Schedule", hint: "Lay out the timeline by date and phase." },
+    ],
+    external: [
+      { title: "Overview", hint: "Briefly introduce what this project is." },
+      { title: "Problem", hint: "What pain point or market problem are customers facing?" },
+      { title: "Market Analysis", hint: "Summarize target market size, growth, and competition." },
+      { title: "Product / Service", hint: "Explain the core features and differentiators." },
+      { title: "Business Model", hint: "Explain how you make money and your pricing." },
+      { title: "Marketing Strategy", hint: "How will you acquire and reach customers?" },
+      { title: "Financial Plan", hint: "Initial investment, projected revenue/costs, break-even." },
+      { title: "Team", hint: "Introduce key people, their roles and experience." },
+    ],
+    proposal: [
+      { title: "Background", hint: "Why you're making this proposal and which of their needs it addresses." },
+      { title: "Proposal Summary", hint: "Summarize what you propose at a glance." },
+      { title: "Expected Benefits", hint: "Concretely state what the company gains by accepting." },
+      { title: "Approach", hint: "How you'll proceed — phases and responsibilities." },
+      { title: "Terms", hint: "Cost, duration, form of collaboration, etc." },
+      { title: "About Us", hint: "Introduce your company's (or org's) strengths and track record." },
+    ],
+  },
 };
+
+// 저장된 문서의 섹션 제목으로 도움말을 찾는다 (양쪽 언어 모두 검색).
+export function getSectionHint(title: string): string | undefined {
+  for (const lang of ["ko", "en"] as Lang[]) {
+    for (const type of ["internal", "external", "proposal"] as PlanType[]) {
+      const found = TEMPLATES[lang][type].find((s) => s.title === title);
+      if (found) return found.hint;
+    }
+  }
+  return undefined;
+}
 
 export function emptyTimetable(): Timetable {
   return { days: [], rows: [] };
 }
 
-export function emptyContent(planType: PlanType): BusinessPlanContent {
-  const template =
-    planType === "internal" ? INTERNAL_TEMPLATE : EXTERNAL_TEMPLATE;
+export function emptyContent(
+  planType: PlanType,
+  lang: Lang = "ko"
+): BusinessPlanContent {
+  const template = TEMPLATES[lang][planType];
   return {
     planType,
-    sections: template.map((s) => ({ ...s })),
+    sections: template.map((s) => ({ title: s.title, body: "" })),
     timetable: emptyTimetable(),
     budget: { total: 0, items: [] },
     images: [],
@@ -139,9 +176,16 @@ export function normalizeContent(raw: unknown): BusinessPlanContent {
       : [],
   };
 
+  const normalizedType: PlanType =
+    data.planType === "internal"
+      ? "internal"
+      : data.planType === "proposal"
+        ? "proposal"
+        : "external";
+
   if (Array.isArray(data.sections)) {
     return {
-      planType: data.planType === "internal" ? "internal" : "external",
+      planType: normalizedType,
       sections: (data.sections as Array<Record<string, unknown>>).map((s) => ({
         title: String(s.title ?? ""),
         body: String(s.body ?? ""),

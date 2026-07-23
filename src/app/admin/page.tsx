@@ -1,18 +1,11 @@
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import { isCloudMode } from "@/lib/mode";
+import { getT } from "@/lib/getLang";
 
 export const dynamic = "force-dynamic";
 
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-
-const TYPE_LABELS: Record<string, string> = {
-  export_docx: "Word 내보내기",
-  export_hwpx: "한글 내보내기",
-  export_pdf: "PDF 인쇄/저장",
-  plan_created: "기획안 생성",
-  receipt_created: "영수증 생성",
-};
 
 type EventRow = { type: string; user_id: string | null; created_at: string };
 type ProfileRow = {
@@ -32,14 +25,13 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 }
 
 export default async function AdminPage() {
+  const { t } = getT();
   if (!isCloudMode()) {
     return (
       <div className="min-h-screen bg-slate-50">
         <Nav />
         <main className="mx-auto max-w-4xl px-4 py-10">
-          <p className="text-sm text-slate-500">
-            통계는 웹(클라우드 모드)에서만 제공됩니다.
-          </p>
+          <p className="text-sm text-slate-500">{t("admin.cloudOnly")}</p>
         </main>
       </div>
     );
@@ -58,16 +50,14 @@ export default async function AdminPage() {
         <Nav />
         <main className="mx-auto max-w-4xl px-4 py-10">
           <h1 className="mb-2 text-xl font-semibold text-slate-900">
-            접근 권한 없음
+            {t("admin.noAccess")}
           </h1>
-          <p className="text-sm text-slate-500">
-            이 페이지는 제작자만 볼 수 있습니다.
-          </p>
+          <p className="text-sm text-slate-500">{t("admin.noAccessBody")}</p>
           <Link
             href="/"
             className="mt-4 inline-block text-sm text-slate-500 hover:text-slate-900"
           >
-            &larr; 홈으로
+            {t("support.toHome")}
           </Link>
         </main>
       </div>
@@ -123,7 +113,6 @@ export default async function AdminPage() {
     "export_hwpx",
     "export_pdf",
     "plan_created",
-    "receipt_created",
   ];
 
   return (
@@ -131,38 +120,39 @@ export default async function AdminPage() {
       <Nav />
       <main className="mx-auto max-w-4xl px-4 py-8">
         <h1 className="mb-1 text-xl font-semibold text-slate-900">
-          사용 통계 (제작자 전용)
+          {t("admin.title")}
         </h1>
         <p className="mb-6 text-sm text-slate-500">
-          {user.email} 님만 볼 수 있는 페이지입니다.
+          {user.email}
+          {t("admin.onlyYou")}
         </p>
 
         <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <StatCard label="총 내보내기" value={totalExports} />
-          <StatCard label="이번 달 내보내기" value={monthExports} />
-          <StatCard label="활동한 사용자 수" value={users.size} />
+          <StatCard label={t("admin.totalExports")} value={totalExports} />
+          <StatCard label={t("admin.monthExports")} value={monthExports} />
+          <StatCard label={t("admin.activeUsers")} value={users.size} />
         </div>
 
         <div className="overflow-hidden rounded-lg border bg-white">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs text-slate-500">
               <tr>
-                <th className="px-4 py-2">항목</th>
-                <th className="px-4 py-2 text-right">이번 달</th>
-                <th className="px-4 py-2 text-right">전체</th>
+                <th className="px-4 py-2">{t("admin.colItem")}</th>
+                <th className="px-4 py-2 text-right">{t("admin.colMonth")}</th>
+                <th className="px-4 py-2 text-right">{t("admin.colTotal")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {orderedTypes.map((t) => (
-                <tr key={t}>
+              {orderedTypes.map((evType) => (
+                <tr key={evType}>
                   <td className="px-4 py-2 text-slate-700">
-                    {TYPE_LABELS[t] ?? t}
+                    {t(`admin.type.${evType}`)}
                   </td>
                   <td className="px-4 py-2 text-right">
-                    {(monthByType[t] ?? 0).toLocaleString("ko-KR")}
+                    {(monthByType[evType] ?? 0).toLocaleString()}
                   </td>
                   <td className="px-4 py-2 text-right font-medium text-slate-900">
-                    {(totalByType[t] ?? 0).toLocaleString("ko-KR")}
+                    {(totalByType[evType] ?? 0).toLocaleString()}
                   </td>
                 </tr>
               ))}
@@ -170,44 +160,35 @@ export default async function AdminPage() {
           </table>
         </div>
 
-        {events.length === 0 && (
-          <p className="mt-4 text-sm text-slate-400">
-            아직 기록된 사용 내역이 없습니다. (또는 events 테이블이 아직 생성되지
-            않았습니다 — supabase/analytics.sql을 실행하세요.)
-          </p>
-        )}
-
         <h2 className="mb-3 mt-10 text-lg font-semibold text-slate-900">
-          가입자 목록 ({profiles.length}명)
+          {t("admin.members")} ({profiles.length}
+          {t("admin.memberCount")})
         </h2>
         <div className="overflow-hidden rounded-lg border bg-white">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-left text-xs text-slate-500">
               <tr>
-                <th className="px-4 py-2">이름/단체명</th>
-                <th className="px-4 py-2">이메일</th>
-                <th className="px-4 py-2 text-right">가입일</th>
+                <th className="px-4 py-2">{t("admin.colName")}</th>
+                <th className="px-4 py-2">{t("admin.colEmail")}</th>
+                <th className="px-4 py-2 text-right">{t("admin.colJoined")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {profiles.map((p) => (
                 <tr key={p.id}>
                   <td className="px-4 py-2 font-medium text-slate-900">
-                    {p.display_name || "(이름 없음)"}
+                    {p.display_name || t("admin.noName")}
                   </td>
                   <td className="px-4 py-2 text-slate-600">{p.email}</td>
                   <td className="px-4 py-2 text-right text-slate-500">
-                    {new Date(p.created_at).toLocaleDateString("ko-KR")}
+                    {new Date(p.created_at).toLocaleDateString()}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
           {profiles.length === 0 && (
-            <p className="p-4 text-sm text-slate-400">
-              아직 가입자가 없습니다. (또는 profiles 테이블이 아직 생성되지
-              않았습니다 — supabase/profiles.sql을 실행하세요.)
-            </p>
+            <p className="p-4 text-sm text-slate-400">—</p>
           )}
         </div>
       </main>

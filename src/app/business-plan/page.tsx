@@ -1,23 +1,28 @@
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import { listPlans } from "@/lib/backend";
+import { getT, getLang } from "@/lib/getLang";
 
 export const dynamic = "force-dynamic";
 
 export default async function BusinessPlanListPage() {
   const plans = await listPlans();
+  const { t } = getT();
+  const lang = getLang();
 
   return (
     <div className="min-h-screen bg-slate-50">
       <Nav />
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-slate-900">기획안</h1>
+          <h1 className="text-xl font-semibold text-slate-900">
+            {t("plans.title")}
+          </h1>
           <Link
             href="/business-plan/new"
             className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
           >
-            + 새 기획안
+            {t("plans.new")}
           </Link>
         </div>
 
@@ -30,10 +35,13 @@ export default async function BusinessPlanListPage() {
                   className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
                 >
                   <span className="font-medium text-slate-900">
-                    {plan.title || "제목 없음"}
+                    {plan.title || t("plans.noTitle")}
                   </span>
                   <span className="text-xs text-slate-400">
-                    {new Date(plan.updated_at).toLocaleString("ko-KR")} 수정
+                    {new Date(plan.updated_at).toLocaleString(
+                      lang === "ko" ? "ko-KR" : "en-US"
+                    )}{" "}
+                    {t("plans.edited")}
                   </span>
                 </Link>
               </li>
@@ -41,7 +49,7 @@ export default async function BusinessPlanListPage() {
           </ul>
         ) : (
           <div className="rounded-lg border border-dashed bg-white p-10 text-center text-sm text-slate-400">
-            아직 작성된 기획안이 없습니다. 위 버튼으로 새로 만들어보세요.
+            {t("plans.empty")}
           </div>
         )}
       </main>

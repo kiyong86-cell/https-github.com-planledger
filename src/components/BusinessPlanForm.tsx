@@ -2,10 +2,11 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SECTION_HINTS, emptyContent } from "@/lib/businessPlanTemplate";
+import { getSectionHint, emptyContent } from "@/lib/businessPlanTemplate";
 import { exportBusinessPlanToDocx } from "@/lib/docxExport";
 import { exportBusinessPlanToHwpx } from "@/lib/hwpExport";
 import { trackEvent } from "@/lib/track";
+import { useI18n } from "@/components/LangProvider";
 import {
   BudgetItem,
   BusinessPlanContent,
@@ -13,6 +14,8 @@ import {
   Timetable,
   TimetableCell,
 } from "@/lib/types";
+
+const PLAN_TYPES: PlanType[] = ["internal", "external", "proposal"];
 
 function defaultTime(): string {
   return "09:00-09:30";
@@ -69,20 +72,6 @@ function unmergeCrossing(
   return result;
 }
 
-const PLAN_TYPE_INFO: Record<
-  PlanType,
-  { label: string; description: string }
-> = {
-  internal: {
-    label: "내부 기획안",
-    description: "개요·목적·프로그램·일정 중심의 간단한 구성",
-  },
-  external: {
-    label: "외부 기획안",
-    description: "시장 분석·수익 구조·재무 계획·팀 소개까지 포함한 제출용 구성",
-  },
-};
-
 export default function BusinessPlanForm({
   planId,
   initialTitle,
@@ -93,6 +82,9 @@ export default function BusinessPlanForm({
   initialContent: BusinessPlanContent;
 }) {
   const router = useRouter();
+  const { t, lang } = useI18n();
+  const typeLabel = (type: PlanType) => t(`form.type.${type}.label`);
+  const typeDesc = (type: PlanType) => t(`form.type.${type}.desc`);
 
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState<BusinessPlanContent>(initialContent);
@@ -112,14 +104,14 @@ export default function BusinessPlanForm({
     if (planId || hasText) {
       // 이미 작성 중이면 섹션은 그대로 두고 종류 표시만 변경
       const keepSections = confirm(
-        `${PLAN_TYPE_INFO[planType].label}(으)로 바꿉니다.\n\n[확인] 지금 작성한 주제·내용은 그대로 유지\n[취소] 바꾸지 않기`
+        `${typeLabel(planType)} →\n\n[OK] keep what you've written\n[Cancel] don't switch`
       );
       if (!keepSections) return;
       setContent((prev) => ({ ...prev, planType }));
     } else {
       // 아직 아무것도 안 썼으면 해당 종류의 기본 주제로 교체
       setContent((prev) => ({
-        ...emptyContent(planType),
+        ...emptyContent(planType, lang),
         budget: prev.budget,
       }));
     }
@@ -147,7 +139,7 @@ export default function BusinessPlanForm({
     const target = content.sections[index];
     if (
       (target.title.trim() || target.body.trim()) &&
-      !confirm(`"${target.title || "제목 없는 주제"}"를 삭제할까요?`)
+      !confirm(`"${target.title || t("plans.noTitle")}" — ${t("form.deleteSection")}?`)
     ) {
       return;
     }
@@ -409,7 +401,7 @@ export default function BusinessPlanForm({
         const form = new FormData();
         form.set("file", file);
         const res = await fetch("/api/uploads", { method: "POST", body: form });
-        if (!res.ok) throw new Error("사진 업로드에 실패했습니다.");
+        if (!res.ok) throw new Error(t("form.photo.uploading"));
         const { file: stored } = await res.json();
         setContent((prev) => ({
           ...prev,
@@ -418,7 +410,7 @@ export default function BusinessPlanForm({
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "사진 업로드에 실패했습니다."
+        err instanceof Error ? err.message : t("form.saveFailed")
       );
     }
     setUploading(false);
@@ -435,7 +427,7 @@ export default function BusinessPlanForm({
   }
 
   function removeImage(index: number) {
-    if (!confirm("이 사진을 목록에서 뺄까요?")) return;
+    if (!confirm(`${t("form.photo.remove")}?`)) return;
     setContent((prev) => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index),
@@ -455,7 +447,7 @@ export default function BusinessPlanForm({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, content }),
         });
-        if (!res.ok) throw new Error("저장에 실패했습니다.");
+        if (!res.ok) throw new Error(t("form.saveFailed"));
         setSavedAt(new Date());
       } else {
         const res = await fetch("/api/plans", {
@@ -463,7 +455,7 @@ export default function BusinessPlanForm({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, content }),
         });
-        if (!res.ok) throw new Error("저장에 실패했습니다.");
+        if (!res.ok) throw new Error(t("form.saveFailed"));
         const plan = await res.json();
         trackEvent("plan_created");
         router.push(`/business-plan/${plan.id}`);
@@ -471,18 +463,18 @@ export default function BusinessPlanForm({
         return;
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "저장에 실패했습니다.");
+      setError(e instanceof Error ? e.message : t("form.saveFailed"));
     }
     setSaving(false);
   }
 
   async function handleDelete() {
     if (!planId) return;
-    if (!confirm("이 기획안을 삭제할까요? 되돌릴 수 없습니다.")) return;
+    if (!confirm(t("form.deleteConfirm"))) return;
 
     const res = await fetch(`/api/plans/${planId}`, { method: "DELETE" });
     if (!res.ok) {
-      setError("삭제에 실패했습니다.");
+      setError(t("form.deleteFailed"));
       return;
     }
     router.push("/business-plan");
@@ -491,8 +483,8 @@ export default function BusinessPlanForm({
 
   return (
     <div className="space-y-6">
-      <div className="no-print grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {(Object.keys(PLAN_TYPE_INFO) as PlanType[]).map((type) => (
+      <div className="no-print grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {PLAN_TYPES.map((type) => (
           <button
             key={type}
             type="button"
@@ -504,29 +496,27 @@ export default function BusinessPlanForm({
             }`}
           >
             <p className="text-sm font-semibold text-slate-900">
-              {PLAN_TYPE_INFO[type].label}
+              {typeLabel(type)}
               {content.planType === type && (
                 <span className="ml-2 text-xs font-normal text-slate-500">
-                  ✓ 선택됨
+                  {t("form.type.selected")}
                 </span>
               )}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
-              {PLAN_TYPE_INFO[type].description}
-            </p>
+            <p className="mt-1 text-xs text-slate-500">{typeDesc(type)}</p>
           </button>
         ))}
       </div>
 
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">
-          기획안 제목
+          {t("form.docTitle")}
         </label>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="w-full rounded-md border px-3 py-2 text-base font-medium focus:border-slate-500 focus:outline-none"
-          placeholder="예) 2학기 OO 프로그램 기획안"
+          placeholder={t("form.docTitlePlaceholder")}
         />
       </div>
 
@@ -539,7 +529,7 @@ export default function BusinessPlanForm({
             <input
               value={section.title}
               onChange={(e) => updateSection(i, "title", e.target.value)}
-              placeholder="주제를 입력하세요"
+              placeholder={t("form.sectionTitlePlaceholder")}
               className="flex-1 rounded-md border border-transparent px-2 py-1 text-sm font-semibold text-slate-800 hover:border-slate-200 focus:border-slate-500 focus:outline-none"
             />
             <div className="no-print flex items-center gap-1 text-slate-400">
@@ -548,7 +538,7 @@ export default function BusinessPlanForm({
                 onClick={() => moveSection(i, -1)}
                 disabled={i === 0}
                 className="rounded px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-30"
-                title="위로 이동"
+                title={t("form.moveUp")}
               >
                 ↑
               </button>
@@ -557,7 +547,7 @@ export default function BusinessPlanForm({
                 onClick={() => moveSection(i, 1)}
                 disabled={i === content.sections.length - 1}
                 className="rounded px-1.5 py-0.5 hover:bg-slate-100 disabled:opacity-30"
-                title="아래로 이동"
+                title={t("form.moveDown")}
               >
                 ↓
               </button>
@@ -565,21 +555,21 @@ export default function BusinessPlanForm({
                 type="button"
                 onClick={() => removeSection(i)}
                 className="rounded px-1.5 py-0.5 text-red-400 hover:bg-red-50"
-                title="이 주제 삭제"
+                title={t("form.deleteSection")}
               >
                 ✕
               </button>
             </div>
           </div>
-          {SECTION_HINTS[section.title] && (
+          {getSectionHint(section.title) && (
             <p className="mb-1 pl-6 text-xs text-slate-400">
-              {SECTION_HINTS[section.title]}
+              {getSectionHint(section.title)}
             </p>
           )}
           <textarea
             value={section.body}
             onChange={(e) => updateSection(i, "body", e.target.value)}
-            placeholder="내용을 입력하세요"
+            placeholder={t("form.sectionBodyPlaceholder")}
             rows={4}
             className="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
           />
@@ -591,17 +581,14 @@ export default function BusinessPlanForm({
         onClick={addSection}
         className="no-print w-full rounded-lg border border-dashed py-3 text-sm text-slate-500 hover:bg-white"
       >
-        + 주제 추가
+        {t("form.addSection")}
       </button>
 
       <div className="rounded-lg border bg-slate-50 p-4">
         <h2 className="mb-1 text-sm font-semibold text-slate-800">
-          일정표 (타임테이블)
+          {t("form.timetable.title")}
         </h2>
-        <p className="mb-3 text-xs text-slate-400">
-          날짜(열)와 시간(행)을 추가해서 일정표를 만들어보세요. Word 내보내기에도
-          표로 들어갑니다.
-        </p>
+        <p className="mb-3 text-xs text-slate-400">{t("form.timetable.hint")}</p>
 
         {content.timetable.days.length > 0 && (
           <div className="mb-3 overflow-x-auto">
@@ -609,7 +596,7 @@ export default function BusinessPlanForm({
               <thead>
                 <tr>
                   <th className="w-32 border bg-white p-1 text-xs font-medium text-slate-500">
-                    시간
+                    {t("form.timetable.timeCol")}
                   </th>
                   {content.timetable.days.map((day, di) => (
                     <th key={di} className="border bg-white p-1">
@@ -617,17 +604,17 @@ export default function BusinessPlanForm({
                         <input
                           value={day}
                           onChange={(e) => updateDay(di, e.target.value)}
-                          placeholder={`예) ${12 + di}일 (수)`}
+                          placeholder={t("form.timetable.dayPlaceholder")}
                           className="min-w-0 flex-1 rounded border-0 px-2 py-1 text-center text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-slate-400"
                         />
                         <button
                           type="button"
                           onClick={() => {
-                            if (confirm("이 날짜(열)를 삭제할까요?"))
+                            if (confirm(t("form.timetable.deleteDayConfirm")))
                               removeDay(di);
                           }}
                           className="no-print shrink-0 text-xs text-red-400 hover:text-red-600"
-                          title="이 날짜 삭제"
+                          title={t("form.timetable.deleteDay")}
                         >
                           ✕
                         </button>
@@ -663,7 +650,7 @@ export default function BusinessPlanForm({
                           <textarea
                             value={cell.text}
                             onChange={(e) => updateCell(ri, ci, e.target.value)}
-                            placeholder="내용"
+                            placeholder={t("form.timetable.cellPlaceholder")}
                             rows={2}
                             className="w-full resize-y rounded border-0 bg-transparent px-2 py-1 text-center text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
                           />
@@ -673,9 +660,9 @@ export default function BusinessPlanForm({
                                 type="button"
                                 onClick={() => mergeRight(ri, ci)}
                                 className="rounded border px-1 py-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                                title="오른쪽 칸과 합치기"
+                                title={t("form.timetable.mergeRightTitle")}
                               >
-                                →병합
+                                {t("form.timetable.mergeRight")}
                               </button>
                             )}
                             {canMergeDown(ri, ci) && (
@@ -683,9 +670,9 @@ export default function BusinessPlanForm({
                                 type="button"
                                 onClick={() => mergeDown(ri, ci)}
                                 className="rounded border px-1 py-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                                title="아래 칸과 합치기"
+                                title={t("form.timetable.mergeDownTitle")}
                               >
-                                ↓병합
+                                {t("form.timetable.mergeDown")}
                               </button>
                             )}
                             {merged && (
@@ -693,9 +680,9 @@ export default function BusinessPlanForm({
                                 type="button"
                                 onClick={() => unmergeCell(ri, ci)}
                                 className="rounded border border-emerald-300 px-1 py-0.5 text-emerald-600 hover:bg-emerald-100"
-                                title="병합 풀기"
+                                title={t("form.timetable.unmergeTitle")}
                               >
-                                해제
+                                {t("form.timetable.unmerge")}
                               </button>
                             )}
                           </div>
@@ -706,11 +693,11 @@ export default function BusinessPlanForm({
                       <button
                         type="button"
                         onClick={() => {
-                          if (confirm("이 시간(행)을 삭제할까요?"))
+                          if (confirm(t("form.timetable.deleteRowConfirm")))
                             removeTimeRow(ri);
                         }}
                         className="text-sm text-red-400 hover:text-red-600"
-                        title="이 시간 행 삭제"
+                        title={t("form.timetable.deleteRow")}
                       >
                         ✕
                       </button>
@@ -728,7 +715,7 @@ export default function BusinessPlanForm({
             onClick={addDay}
             className="rounded-md border border-dashed px-3 py-1.5 text-sm text-slate-600 hover:bg-white"
           >
-            + 날짜(열) 추가
+            {t("form.timetable.addDay")}
           </button>
           {content.timetable.days.length > 0 && (
             <button
@@ -736,21 +723,21 @@ export default function BusinessPlanForm({
               onClick={addTimeRow}
               className="rounded-md border border-dashed px-3 py-1.5 text-sm text-slate-600 hover:bg-white"
             >
-              + 시간(행) 추가
+              {t("form.timetable.addRow")}
             </button>
           )}
         </div>
       </div>
 
       <div className="rounded-lg border bg-slate-50 p-4">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">예산안</h2>
-        <p className="mb-3 text-xs text-slate-400">
-          총 예산을 입력하고, 프로그램(항목)별로 배정 금액을 나눠보세요.
-        </p>
+        <h2 className="mb-1 text-sm font-semibold text-slate-800">
+          {t("form.budget.title")}
+        </h2>
+        <p className="mb-3 text-xs text-slate-400">{t("form.budget.hint")}</p>
 
         <div className="mb-4">
           <label className="mb-1 block text-sm font-medium text-slate-700">
-            총 예산 (원)
+            {t("form.budget.total")}
           </label>
           <input
             type="number"
@@ -758,7 +745,7 @@ export default function BusinessPlanForm({
             step="1"
             value={content.budget.total || ""}
             onChange={(e) => updateTotalBudget(e.target.value)}
-            placeholder="예) 1000000"
+            placeholder={t("form.budget.totalPlaceholder")}
             className="w-full max-w-xs rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
           />
         </div>
@@ -766,10 +753,10 @@ export default function BusinessPlanForm({
         {content.budget.items.length > 0 && (
           <div className="mb-3 space-y-2">
             <div className="hidden gap-2 text-xs text-slate-500 sm:grid sm:grid-cols-[1fr_1.2fr_110px_0.8fr_32px]">
-              <span>프로그램명</span>
-              <span>산출 내역</span>
-              <span>금액 (원)</span>
-              <span>비고</span>
+              <span>{t("form.budget.colName")}</span>
+              <span>{t("form.budget.colDetail")}</span>
+              <span>{t("form.budget.colAmount")}</span>
+              <span>{t("form.budget.colNote")}</span>
               <span></span>
             </div>
             {content.budget.items.map((item, i) => (
@@ -780,7 +767,7 @@ export default function BusinessPlanForm({
                 <input
                   value={item.name}
                   onChange={(e) => updateBudgetItem(i, "name", e.target.value)}
-                  placeholder="예) 다과비"
+                  placeholder={t("form.budget.namePlaceholder")}
                   className="rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                 />
                 <input
@@ -788,7 +775,7 @@ export default function BusinessPlanForm({
                   onChange={(e) =>
                     updateBudgetItem(i, "detail", e.target.value)
                   }
-                  placeholder="예) 1인 1,000원 x 10명"
+                  placeholder={t("form.budget.detailPlaceholder")}
                   className="rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                 />
                 <input
@@ -805,14 +792,14 @@ export default function BusinessPlanForm({
                 <input
                   value={item.note}
                   onChange={(e) => updateBudgetItem(i, "note", e.target.value)}
-                  placeholder="비고"
+                  placeholder={t("form.budget.notePlaceholder")}
                   className="rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
                 />
                 <button
                   type="button"
                   onClick={() => removeBudgetItem(i)}
                   className="justify-self-end text-sm text-red-500 hover:underline sm:justify-self-center sm:self-center"
-                  title="이 항목 삭제"
+                  title={t("form.budget.deleteItem")}
                 >
                   ✕
                 </button>
@@ -826,35 +813,37 @@ export default function BusinessPlanForm({
           onClick={addBudgetItem}
           className="no-print rounded-md border border-dashed px-3 py-1.5 text-sm text-slate-600 hover:bg-white"
         >
-          + 프로그램 추가
+          {t("form.budget.addItem")}
         </button>
 
         <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 border-t pt-3 text-sm">
           <span className="text-slate-600">
-            배정 합계:{" "}
+            {t("form.budget.allocated")}:{" "}
             <strong className="text-slate-900">
-              {allocated.toLocaleString("ko-KR")}원
+              {allocated.toLocaleString()}
             </strong>
           </span>
           <span className="text-slate-600">
-            남은 예산:{" "}
+            {t("form.budget.remaining")}:{" "}
             <strong
               className={remaining < 0 ? "text-red-600" : "text-slate-900"}
             >
-              {remaining.toLocaleString("ko-KR")}원
+              {remaining.toLocaleString()}
             </strong>
             {remaining < 0 && (
-              <span className="ml-1 text-xs text-red-600">(예산 초과!)</span>
+              <span className="ml-1 text-xs text-red-600">
+                {t("form.budget.over")}
+              </span>
             )}
           </span>
         </div>
       </div>
 
       <div className="rounded-lg border bg-white p-4">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">사진 첨부</h2>
-        <p className="mb-3 text-xs text-slate-400">
-          행사 사진, 참고 이미지 등을 첨부하세요. Word 내보내기에도 포함됩니다.
-        </p>
+        <h2 className="mb-1 text-sm font-semibold text-slate-800">
+          {t("form.photo.title")}
+        </h2>
+        <p className="mb-3 text-xs text-slate-400">{t("form.photo.hint")}</p>
 
         {content.images.length > 0 && (
           <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -863,21 +852,21 @@ export default function BusinessPlanForm({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/api/uploads/${img.file}`}
-                  alt={img.caption || `첨부 사진 ${i + 1}`}
+                  alt={img.caption || `${t("form.photo.title")} ${i + 1}`}
                   className="mb-2 h-32 w-full rounded object-cover"
                 />
                 <div className="flex items-center gap-1">
                   <input
                     value={img.caption}
                     onChange={(e) => updateImageCaption(i, e.target.value)}
-                    placeholder="사진 설명 (선택)"
+                    placeholder={t("form.photo.captionPlaceholder")}
                     className="min-w-0 flex-1 rounded-md border px-2 py-1 text-xs focus:border-slate-500 focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => removeImage(i)}
                     className="no-print shrink-0 text-sm text-red-500 hover:underline"
-                    title="이 사진 제거"
+                    title={t("form.photo.remove")}
                   >
                     ✕
                   </button>
@@ -896,10 +885,12 @@ export default function BusinessPlanForm({
           className="no-print w-full text-sm"
         />
         {uploading && (
-          <p className="mt-2 text-xs text-slate-400">사진 올리는 중...</p>
+          <p className="mt-2 text-xs text-slate-400">
+            {t("form.photo.uploading")}
+          </p>
         )}
         <p className="mt-2 text-xs text-slate-400">
-          사진을 추가하거나 뺀 뒤에는 꼭 <strong>저장</strong>을 눌러주세요.
+          {t("form.photo.saveReminder")}
         </p>
       </div>
 
@@ -911,7 +902,7 @@ export default function BusinessPlanForm({
           disabled={saving}
           className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
-          {saving ? "저장 중..." : "저장"}
+          {saving ? t("form.saving") : t("form.save")}
         </button>
         <button
           onClick={() => {
@@ -920,9 +911,9 @@ export default function BusinessPlanForm({
           }}
           className="flex items-center gap-1.5 rounded-md border-2 border-emerald-500 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
         >
-          Word(.docx)로 내보내기
+          {t("form.exportWord")}
           <span className="rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-            추천
+            {t("form.recommended")}
           </span>
         </button>
         <button
@@ -932,14 +923,14 @@ export default function BusinessPlanForm({
               await exportBusinessPlanToHwpx(title, content);
               trackEvent("export_hwpx");
             } catch {
-              setError("HWP 내보내기에 실패했습니다.");
+              setError(t("form.hwpFailed"));
             }
             setExportingHwp(false);
           }}
           disabled={exportingHwp}
           className="rounded-md border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
         >
-          {exportingHwp ? "변환 중..." : "한글(.hwpx)로 내보내기"}
+          {exportingHwp ? t("form.exporting") : t("form.exportHwp")}
         </button>
         <button
           onClick={() => {
@@ -948,26 +939,23 @@ export default function BusinessPlanForm({
           }}
           className="rounded-md border px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
-          PDF로 인쇄/저장
+          {t("form.exportPdf")}
         </button>
         {planId && (
           <button
             onClick={handleDelete}
             className="ml-auto text-sm text-red-600 hover:underline"
           >
-            삭제
+            {t("form.delete")}
           </button>
         )}
         {savedAt && (
           <span className="text-xs text-slate-400">
-            {savedAt.toLocaleTimeString("ko-KR")} 저장됨
+            {savedAt.toLocaleTimeString()} {t("form.saved")}
           </span>
         )}
       </div>
-      <p className="no-print text-xs text-slate-400">
-        표·색상이 가장 깔끔하게 나오는 <strong>Word(.docx)</strong>를
-        추천합니다. 한글(.hwpx)은 관공서에 .hwp로 제출할 때 사용하세요.
-      </p>
+      <p className="no-print text-xs text-slate-400">{t("form.exportNote")}</p>
     </div>
   );
 }

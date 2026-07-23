@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/components/LangProvider";
+import LangToggle from "@/components/LangToggle";
 
 // 로그인 성공 시 profiles 테이블에 이름/이메일을 동기화한다.
-// (가입 시 이메일 인증이 켜져 있으면 signUp 시점엔 세션이 없어서, 여기서 처리한다.)
 async function syncProfile(supabase: ReturnType<typeof createClient>) {
   const {
     data: { user },
@@ -21,10 +23,12 @@ async function syncProfile(supabase: ReturnType<typeof createClient>) {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -33,6 +37,12 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setMessage(null);
+
+    if (mode === "signup" && !agreed) {
+      setError(t("login.agreeRequired"));
+      return;
+    }
+
     setLoading(true);
     const supabase = createClient();
 
@@ -44,7 +54,7 @@ export default function LoginPage() {
       if (error) {
         setError(
           error.message === "Invalid login credentials"
-            ? "이메일 또는 비밀번호가 올바르지 않습니다."
+            ? t("login.invalidCred")
             : error.message
         );
         setLoading(false);
@@ -66,16 +76,13 @@ export default function LoginPage() {
       }
 
       if (data.session) {
-        // 이메일 인증이 꺼져 있는 프로젝트: 가입 즉시 세션이 생김 → 바로 로그인 처리
         await syncProfile(supabase);
         router.push("/");
         router.refresh();
         return;
       }
 
-      setMessage(
-        "가입 확인 이메일을 보냈습니다. 이메일을 확인한 뒤 로그인해주세요."
-      );
+      setMessage(t("login.confirmSent"));
       setLoading(false);
     }
   }
@@ -83,18 +90,21 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-lg border bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-xl font-semibold text-slate-900">
-          기획안 &amp; 영수증 관리
-        </h1>
+        <div className="mb-1 flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-slate-900">
+            {t("app.name")}
+          </h1>
+          <LangToggle />
+        </div>
         <p className="mb-6 text-sm text-slate-500">
-          {mode === "login" ? "로그인해서 계속하기" : "새 계정 만들기"}
+          {mode === "login" ? t("login.continue") : t("login.createAccount")}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "signup" && (
             <div>
               <label className="mb-1 block text-sm text-slate-700">
-                이름 또는 단체명
+                {t("login.name")}
               </label>
               <input
                 type="text"
@@ -102,12 +112,14 @@ export default function LoginPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-                placeholder="예) 박기용 또는 두레줄기 사회적협동조합"
+                placeholder={t("login.namePlaceholder")}
               />
             </div>
           )}
           <div>
-            <label className="mb-1 block text-sm text-slate-700">이메일</label>
+            <label className="mb-1 block text-sm text-slate-700">
+              {t("login.email")}
+            </label>
             <input
               type="email"
               required
@@ -118,7 +130,9 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-slate-700">비밀번호</label>
+            <label className="mb-1 block text-sm text-slate-700">
+              {t("login.password")}
+            </label>
             <input
               type="password"
               required
@@ -126,9 +140,31 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-              placeholder="6자 이상"
+              placeholder={t("login.passwordPlaceholder")}
             />
           </div>
+
+          {mode === "signup" && (
+            <label className="flex items-start gap-2 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                {t("login.agreePrefix")}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="text-slate-900 underline"
+                >
+                  {t("login.agreeLink")}
+                </Link>
+                {t("login.agreeSuffix")}
+              </span>
+            </label>
+          )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}
           {message && <p className="text-sm text-green-600">{message}</p>}
@@ -138,7 +174,11 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-md bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
           >
-            {loading ? "처리 중..." : mode === "login" ? "로그인" : "회원가입"}
+            {loading
+              ? t("login.processing")
+              : mode === "login"
+                ? t("login.loginBtn")
+                : t("login.signupBtn")}
           </button>
         </form>
 
@@ -150,9 +190,7 @@ export default function LoginPage() {
           }}
           className="mt-4 w-full text-center text-sm text-slate-500 hover:text-slate-900"
         >
-          {mode === "login"
-            ? "계정이 없으신가요? 회원가입"
-            : "이미 계정이 있으신가요? 로그인"}
+          {mode === "login" ? t("login.toSignup") : t("login.toLogin")}
         </button>
       </div>
     </div>

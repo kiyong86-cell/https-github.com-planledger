@@ -1,16 +1,14 @@
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
-import { BusinessPlan, BusinessPlanContent, Receipt } from "./types";
+import { BusinessPlan, BusinessPlanContent } from "./types";
 
 // 모든 데이터는 프로젝트 폴더 안 data/ 에 저장됩니다.
-// - data/plans.json    사업계획서
-// - data/receipts.json 영수증 목록
-// - data/uploads/      영수증 사진 원본
+// - data/plans.json    기획안
+// - data/uploads/      첨부 사진 원본
 const DATA_DIR = path.join(process.cwd(), "data");
 const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 const PLANS_FILE = path.join(DATA_DIR, "plans.json");
-const RECEIPTS_FILE = path.join(DATA_DIR, "receipts.json");
 
 function ensureDirs() {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -97,48 +95,6 @@ export function deletePlan(id: string): boolean {
   return true;
 }
 
-// ---------- 영수증 ----------
-
-export function listReceipts(): Receipt[] {
-  return readJson<Receipt>(RECEIPTS_FILE).sort(
-    (a, b) =>
-      b.receipt_date.localeCompare(a.receipt_date) ||
-      b.created_at.localeCompare(a.created_at)
-  );
-}
-
-export function getReceipt(id: string): Receipt | null {
-  return readJson<Receipt>(RECEIPTS_FILE).find((r) => r.id === id) ?? null;
-}
-
-export function createReceipt(
-  input: Omit<Receipt, "id" | "created_at">
-): Receipt {
-  const receipt: Receipt = {
-    ...input,
-    id: randomUUID(),
-    created_at: new Date().toISOString(),
-  };
-  const receipts = readJson<Receipt>(RECEIPTS_FILE);
-  receipts.push(receipt);
-  writeJson(RECEIPTS_FILE, receipts);
-  return receipt;
-}
-
-export function deleteReceipt(id: string): boolean {
-  const receipts = readJson<Receipt>(RECEIPTS_FILE);
-  const target = receipts.find((r) => r.id === id);
-  if (!target) return false;
-  if (target.image_path) {
-    const imageFile = path.join(UPLOADS_DIR, target.image_path);
-    if (fs.existsSync(imageFile)) fs.unlinkSync(imageFile);
-  }
-  writeJson(
-    RECEIPTS_FILE,
-    receipts.filter((r) => r.id !== id)
-  );
-  return true;
-}
 
 // ---------- 이미지 파일 ----------
 

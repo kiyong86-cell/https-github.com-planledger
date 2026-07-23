@@ -37,7 +37,7 @@ export type Timetable = {
   rows: TimetableRow[];
 };
 
-export type PlanType = "internal" | "external";
+export type PlanType = "internal" | "external" | "proposal";
 
 export type BusinessPlanContent = {
   planType: PlanType;
@@ -54,25 +54,3 @@ export type BusinessPlan = {
   created_at: string;
   updated_at: string;
 };
-
-export type Receipt = {
-  id: string;
-  receipt_date: string;
-  vendor: string | null;
-  amount: number;
-  category: string | null;
-  memo: string | null;
-  image_path: string | null;
-  created_at: string;
-};
-
-export const RECEIPT_CATEGORIES = [
-  "식비",
-  "교통비",
-  "사무용품",
-  "마케팅",
-  "출장비",
-  "통신비",
-  "임대료",
-  "기타",
-] as const;

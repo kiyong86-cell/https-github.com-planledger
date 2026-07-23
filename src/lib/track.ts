@@ -3,8 +3,7 @@ export type TrackType =
   | "export_docx"
   | "export_hwpx"
   | "export_pdf"
-  | "plan_created"
-  | "receipt_created";
+  | "plan_created";
 
 export function trackEvent(type: TrackType) {
   try {

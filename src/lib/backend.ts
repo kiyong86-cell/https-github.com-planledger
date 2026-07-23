@@ -1,6 +1,6 @@
 // 데이터 계층: 클라우드 모드(Supabase)와 로컬 모드(data/ 폴더)를 같은 API로 감싼다.
 // 모든 함수는 async — 페이지와 API 라우트는 이 모듈만 사용한다.
-import { BusinessPlan, BusinessPlanContent, Receipt } from "./types";
+import { BusinessPlan, BusinessPlanContent } from "./types";
 import { isCloudMode } from "./mode";
 import * as local from "./localdb";
 
@@ -102,66 +102,6 @@ export async function deletePlan(id: string): Promise<boolean> {
     .from("business_plans")
     .delete()
     .eq("id", id);
-  return !error;
-}
-
-// ---------- 영수증 ----------
-
-export async function listReceipts(): Promise<Receipt[]> {
-  if (!isCloudMode()) return local.listReceipts();
-  const supabase = await cloud();
-  const { data, error } = await supabase
-    .from("receipts")
-    .select("*")
-    .order("receipt_date", { ascending: false })
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Receipt[];
-}
-
-export async function createReceipt(
-  input: Omit<Receipt, "id" | "created_at">
-): Promise<Receipt> {
-  if (!isCloudMode()) return local.createReceipt(input);
-  const supabase = await cloud();
-  const userId = await cloudUserId();
-  const { data, error } = await supabase
-    .from("receipts")
-    .insert({ ...input, user_id: userId })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data as Receipt;
-}
-
-export async function getReceipt(id: string): Promise<Receipt | null> {
-  if (!isCloudMode()) return local.getReceipt(id);
-  const supabase = await cloud();
-  const { data } = await supabase
-    .from("receipts")
-    .select("*")
-    .eq("id", id)
-    .single();
-  return (data as Receipt) ?? null;
-}
-
-export async function deleteReceipt(id: string): Promise<boolean> {
-  if (!isCloudMode()) return local.deleteReceipt(id);
-  const supabase = await cloud();
-  const userId = await cloudUserId();
-
-  const { data: receipt } = await supabase
-    .from("receipts")
-    .select("image_path")
-    .eq("id", id)
-    .single();
-  if (receipt?.image_path) {
-    await supabase.storage
-      .from("uploads")
-      .remove([`${userId}/${receipt.image_path}`]);
-  }
-
-  const { error } = await supabase.from("receipts").delete().eq("id", id);
   return !error;
 }
 
