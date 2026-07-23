@@ -19,3 +19,8 @@
 .DS_Store
 *.pem
 npm-debug.log*
+tsconfig.tsbuildinfo
+
+# 로컬 검증용 샘플 내보내기 파일
+내보내기_스타일_예시.docx
+한글내보내기_스타일_예시.hwpx
