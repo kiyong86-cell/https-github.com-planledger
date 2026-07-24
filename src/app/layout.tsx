@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { LangProvider } from "@/components/LangProvider";
+import Footer from "@/components/Footer";
 import { getLang } from "@/lib/getLang";
 
 export const metadata: Metadata = {
@@ -18,7 +19,12 @@ export default function RootLayout({
   return (
     <html lang={lang}>
       <body>
-        <LangProvider initialLang={lang}>{children}</LangProvider>
+        <LangProvider initialLang={lang}>
+          <div className="flex min-h-screen flex-col">
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </div>
+        </LangProvider>
       </body>
     </html>
   );
