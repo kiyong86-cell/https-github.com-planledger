@@ -1,13 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useI18n } from "./LangProvider";
 import LangToggle from "./LangToggle";
+import { getCurrentUser } from "@/lib/planStore";
+
+const CLOUD_ENABLED = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useI18n();
+  const [email, setEmail] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    getCurrentUser()
+      .then((u) => setEmail(u?.email ?? null))
+      .catch(() => setEmail(null))
+      .finally(() => setChecked(true));
+  }, [pathname]);
 
   const links = [
     { href: "/", label: t("nav.home") },
@@ -15,6 +29,14 @@ export default function Nav() {
     { href: "/convert", label: t("nav.convert") },
     { href: "/contact", label: t("nav.contact") },
   ];
+
+  async function handleLogout() {
+    const { createClient } = await import("@/lib/supabase/client");
+    await createClient().auth.signOut();
+    setEmail(null);
+    router.push("/");
+    router.refresh();
+  }
 
   return (
     <nav className="border-b bg-white">
@@ -37,7 +59,27 @@ export default function Nav() {
             ))}
           </div>
         </div>
-        <LangToggle />
+        <div className="flex items-center gap-3">
+          <LangToggle />
+          {CLOUD_ENABLED &&
+            checked &&
+            (email ? (
+              <button
+                onClick={handleLogout}
+                className="text-sm text-slate-500 hover:text-slate-900"
+                title={email}
+              >
+                {t("nav.logout")}
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="text-sm text-slate-500 hover:text-slate-900"
+              >
+                {t("nav.login")}
+              </Link>
+            ))}
+        </div>
       </div>
     </nav>
   );

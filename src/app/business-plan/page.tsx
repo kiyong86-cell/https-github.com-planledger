@@ -4,16 +4,20 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import { useI18n } from "@/components/LangProvider";
-import { listPlans } from "@/lib/planStore";
+import { getCurrentUser, listPlans } from "@/lib/planStore";
 import { BusinessPlan } from "@/lib/types";
 
 type PlanRow = Pick<BusinessPlan, "id" | "title" | "updated_at">;
 
+const CLOUD_ENABLED = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
+
 export default function BusinessPlanListPage() {
   const { t, lang } = useI18n();
   const [plans, setPlans] = useState<PlanRow[] | null>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
+    getCurrentUser().then((u) => setLoggedIn(Boolean(u)));
     listPlans()
       .then(setPlans)
       .catch(() => setPlans([]));
@@ -62,7 +66,20 @@ export default function BusinessPlanListPage() {
           </div>
         )}
 
-        <p className="mt-4 text-xs text-slate-400">{t("plans.browserNote")}</p>
+        <p className="mt-4 text-xs text-slate-400">
+          {loggedIn ? (
+            t("auth.savedToAccount")
+          ) : (
+            <>
+              {t("auth.savedToBrowser")}{" "}
+              {CLOUD_ENABLED && (
+                <Link href="/login" className="text-emerald-700 underline">
+                  {t("auth.loginToSync")}
+                </Link>
+              )}
+            </>
+          )}
+        </p>
       </main>
     </div>
   );

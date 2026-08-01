@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import { useI18n } from "@/components/LangProvider";
-import { listPlans } from "@/lib/planStore";
+import { getCurrentUser, listPlans } from "@/lib/planStore";
+
+const CLOUD_ENABLED = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
 
 export default function HomePage() {
   const { t } = useI18n();
   const [planCount, setPlanCount] = useState<number | null>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
 
   useEffect(() => {
+    getCurrentUser().then((u) => setLoggedIn(Boolean(u)));
     listPlans()
       .then((p) => setPlanCount(p.length))
       .catch(() => setPlanCount(0));
@@ -51,6 +55,13 @@ export default function HomePage() {
         </div>
 
         <p className="mt-8 text-xs text-slate-400">{t("home.noSignup")}</p>
+        {CLOUD_ENABLED && !loggedIn && (
+          <p className="mt-1 text-xs text-slate-400">
+            <Link href="/login" className="text-emerald-700 underline">
+              {t("auth.loginToSync")}
+            </Link>
+          </p>
+        )}
       </main>
     </div>
   );
