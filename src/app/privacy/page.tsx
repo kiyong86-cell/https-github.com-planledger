@@ -5,54 +5,42 @@ import { getLang, getT } from "@/lib/getLang";
 export const dynamic = "force-dynamic";
 
 const SERVICE_NAME = "PlanLedger";
-const CONTACT = process.env.NEXT_PUBLIC_CONTACT || "관리자 이메일";
+const CONTACT = process.env.NEXT_PUBLIC_CONTACT || "kiyong0263@naver.com";
 
 const KO = [
   {
-    h: "1. 수집하는 개인정보 항목",
+    h: "1. 회원가입을 받지 않습니다",
     p: [
-      `${SERVICE_NAME}(이하 "서비스")는 회원가입 및 서비스 제공을 위해 다음 정보를 수집합니다.`,
-      "• 필수: 이메일 주소, 비밀번호, 이름 또는 단체명",
-      "• 서비스 이용 과정에서 이용자가 직접 입력·업로드하는 기획안·제안서 내용 및 첨부 이미지",
+      `${SERVICE_NAME}(이하 "서비스")는 회원가입·로그인 없이 이용할 수 있으며, 이름·이메일 등 어떤 개인정보도 수집하지 않습니다.`,
     ],
   },
   {
-    h: "2. 개인정보의 수집·이용 목적",
+    h: "2. 작성한 문서는 어디에 저장되나요",
     p: [
-      "• 회원 식별 및 로그인, 서비스 제공",
-      "• 이용자가 작성한 문서의 저장·조회·내보내기",
-      "• 서비스 운영 통계(내보내기 횟수 등) 집계 — 개인을 특정하지 않는 범위",
+      "이용자가 작성한 기획안·제안서와 첨부한 사진은 이용자 본인의 브라우저 저장소에만 저장되며, 서버로 전송되지 않습니다.",
+      "Word 파일을 한글 파일로 바꾸는 변환 기능도 전부 브라우저 안에서 처리되어, 업로드한 파일이 서버로 전송되지 않습니다.",
+      "따라서 브라우저 데이터를 삭제하거나 다른 기기·브라우저를 사용하면 작성한 문서는 보이지 않습니다. 중요한 문서는 Word·한글 파일로 내보내 따로 보관해주세요.",
     ],
   },
   {
-    h: "3. 보유 및 이용 기간",
+    h: "3. 수집하는 이용 통계",
     p: [
-      "이용자의 개인정보는 회원 탈퇴 시 또는 수집·이용 목적 달성 시까지 보유하며, 그 후 지체 없이 파기합니다.",
-      "이용자는 언제든지 계정 삭제를 요청할 수 있으며, 요청 시 관련 데이터를 삭제합니다.",
+      "서비스 개선을 위해 기능 사용 횟수(문서 내보내기·변환 등)만 익명으로 집계합니다.",
+      "이 기록에는 이용자를 식별할 수 있는 정보나 문서 내용이 포함되지 않습니다.",
     ],
   },
   {
-    h: "4. 개인정보의 처리위탁 및 국외 이전",
+    h: "4. 서비스 운영 위탁",
     p: [
-      "서비스는 안정적인 운영을 위해 아래 해외 클라우드 서비스에 데이터 저장·처리를 위탁합니다.",
-      "• Supabase (데이터베이스·인증·파일 저장) — 미국 등",
-      "• Vercel (웹 호스팅) — 미국 등",
-      "이용자가 입력한 정보는 위 서비스의 서버(국외)에 저장될 수 있습니다.",
+      "서비스는 웹사이트 호스팅을 위해 Vercel(미국 등)을 이용하며, 접속 과정에서 통상적인 접속 기록(IP 등)이 해당 업체에 의해 처리될 수 있습니다.",
     ],
   },
   {
-    h: "5. 이용자의 권리",
-    p: [
-      "이용자는 자신의 개인정보에 대해 열람·정정·삭제·처리정지를 요구할 수 있습니다.",
-      `요청은 아래 문의처(${CONTACT})로 접수할 수 있습니다.`,
-    ],
-  },
-  {
-    h: "6. 개인정보 보호책임자 및 문의",
+    h: "5. 문의",
     p: [`문의: ${CONTACT}`],
   },
   {
-    h: "7. 고지의 의무",
+    h: "6. 고지의 의무",
     p: [
       "본 방침은 관련 법령·서비스 변경에 따라 개정될 수 있으며, 변경 시 서비스 내 공지합니다.",
     ],
@@ -61,50 +49,38 @@ const KO = [
 
 const EN = [
   {
-    h: "1. Information We Collect",
+    h: "1. No Sign-up Required",
     p: [
-      `${SERVICE_NAME} (the "Service") collects the following for account creation and service provision.`,
-      "• Required: email address, password, name or organization",
-      "• Documents (proposals) and attached images you create or upload while using the Service",
+      `${SERVICE_NAME} (the "Service") can be used without any sign-up or login, and collects no personal information such as your name or email.`,
     ],
   },
   {
-    h: "2. Purpose of Collection and Use",
+    h: "2. Where Your Documents Are Stored",
     p: [
-      "• Member identification, login, and service provision",
-      "• Saving, viewing, and exporting documents you create",
-      "• Aggregate usage statistics (e.g. export counts) that do not identify individuals",
+      "Documents you create and images you attach are stored only in your own browser storage — they are never sent to a server.",
+      "The Word-to-HWP conversion also runs entirely inside your browser; uploaded files are never transmitted to a server.",
+      "As a result, clearing your browser data or switching devices/browsers means your documents will no longer appear. Please export important documents to Word or HWP and keep your own copy.",
     ],
   },
   {
-    h: "3. Retention Period",
+    h: "3. Usage Statistics",
     p: [
-      "Your data is retained until you delete your account or the purpose of collection is fulfilled, after which it is destroyed without delay.",
-      "You may request account deletion at any time; related data will be deleted upon request.",
+      "To improve the Service, we count only anonymous feature usage (e.g. exports and conversions).",
+      "These records contain no personally identifying information and no document content.",
     ],
   },
   {
-    h: "4. Sub-processing and International Transfer",
+    h: "4. Service Providers",
     p: [
-      "For reliable operation, the Service entrusts data storage/processing to the following overseas cloud providers.",
-      "• Supabase (database, authentication, file storage) — USA, etc.",
-      "• Vercel (web hosting) — USA, etc.",
-      "Your information may be stored on the servers of these providers, located outside your country.",
+      "The Service uses Vercel (USA, etc.) for web hosting; standard access logs (such as IP addresses) may be processed by that provider.",
     ],
   },
   {
-    h: "5. Your Rights",
-    p: [
-      "You may request access to, correction, deletion of, or suspension of processing of your personal data.",
-      `Requests can be sent to the contact below (${CONTACT}).`,
-    ],
-  },
-  {
-    h: "6. Data Protection Contact",
+    h: "5. Contact",
     p: [`Contact: ${CONTACT}`],
   },
   {
-    h: "7. Changes to This Policy",
+    h: "6. Changes to This Policy",
     p: [
       "This policy may be revised in line with applicable laws or service changes; changes will be announced within the Service.",
     ],
@@ -115,7 +91,8 @@ export default function PrivacyPage() {
   const { t } = getT();
   const lang = getLang();
   const sections = lang === "ko" ? KO : EN;
-  const updated = lang === "ko" ? "최종 개정일: 2026-07-23" : "Last updated: 2026-07-23";
+  const updated =
+    lang === "ko" ? "최종 개정일: 2026-08-01" : "Last updated: 2026-08-01";
 
   return (
     <div className="min-h-screen bg-slate-50">

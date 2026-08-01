@@ -1,10 +1,9 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/contact", "/convert"];
-
+// 사이트는 회원가입 없이 누구나 이용 가능.
+// 제작자 통계(/admin)만 로그인(제작자 계정)으로 보호한다.
 export async function middleware(request: NextRequest) {
-  // 로컬 모드(Supabase 미설정)에서는 로그인 없이 모두 통과
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -39,27 +38,15 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublicPath = PUBLIC_PATHS.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
-
-  if (!user && !isPublicPath) {
+  if (!user && request.nextUrl.pathname.startsWith("/admin")) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     return NextResponse.redirect(loginUrl);
-  }
-
-  if (user && request.nextUrl.pathname.startsWith("/login")) {
-    const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = "/";
-    return NextResponse.redirect(homeUrl);
   }
 
   return response;
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/admin/:path*", "/login"],
 };

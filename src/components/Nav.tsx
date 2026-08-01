@@ -1,32 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useI18n } from "./LangProvider";
 import LangToggle from "./LangToggle";
 
-// NEXT_PUBLIC_ 환경변수는 빌드 시 클라이언트에도 주입된다
-const CLOUD_MODE = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
-
 export default function Nav() {
   const pathname = usePathname();
-  const router = useRouter();
   const { t } = useI18n();
 
   const links = [
     { href: "/", label: t("nav.home") },
     { href: "/business-plan", label: t("nav.plans") },
     { href: "/convert", label: t("nav.convert") },
-    { href: "/support", label: t("nav.support") },
     { href: "/contact", label: t("nav.contact") },
   ];
-
-  async function handleLogout() {
-    const { createClient } = await import("@/lib/supabase/client");
-    await createClient().auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
 
   return (
     <nav className="border-b bg-white">
@@ -49,25 +37,7 @@ export default function Nav() {
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <LangToggle />
-          {CLOUD_MODE && (
-            <>
-              <Link
-                href="/account"
-                className="text-sm text-slate-500 hover:text-slate-900"
-              >
-                {t("nav.account")}
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-sm text-slate-500 hover:text-slate-900"
-              >
-                {t("nav.logout")}
-              </button>
-            </>
-          )}
-        </div>
+        <LangToggle />
       </div>
     </nav>
   );

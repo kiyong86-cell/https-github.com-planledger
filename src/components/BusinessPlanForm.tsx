@@ -407,20 +407,20 @@ export default function BusinessPlanForm({
     setError(null);
     try {
       for (const file of files) {
-        const form = new FormData();
-        form.set("file", file);
-        const res = await fetch("/api/uploads", { method: "POST", body: form });
-        if (!res.ok) throw new Error(t("form.photo.uploading"));
-        const { file: stored } = await res.json();
+        // 사진은 브라우저에 data URL로 보관 (서버 업로드 없음)
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(file);
+        });
         setContent((prev) => ({
           ...prev,
-          images: [...prev.images, { file: stored, caption: "" }],
+          images: [...prev.images, { file: dataUrl, caption: "" }],
         }));
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("form.saveFailed")
-      );
+      setError(err instanceof Error ? err.message : t("form.saveFailed"));
     }
     setUploading(false);
     if (imageInputRef.current) imageInputRef.current.value = "";
@@ -450,25 +450,17 @@ export default function BusinessPlanForm({
     setError(null);
 
     try {
+      const store = await import("@/lib/planStore");
       if (planId) {
-        const res = await fetch(`/api/plans/${planId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, content }),
-        });
-        if (!res.ok) throw new Error(t("form.saveFailed"));
+        const updated = await store.updatePlan(planId, title, content);
+        if (!updated) throw new Error(t("form.saveFailed"));
         setSavedAt(new Date());
       } else {
-        const res = await fetch("/api/plans", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, content }),
-        });
-        if (!res.ok) throw new Error(t("form.saveFailed"));
-        const plan = await res.json();
+        const plan = await store.createPlan(title, content);
         trackEvent("plan_created");
-        router.push(`/business-plan/${plan.id}`);
-        router.refresh();
+        setSavedAt(new Date());
+        setSaving(false);
+        router.replace(`/business-plan/${plan.id}`);
         return;
       }
     } catch (e) {
@@ -481,13 +473,13 @@ export default function BusinessPlanForm({
     if (!planId) return;
     if (!confirm(t("form.deleteConfirm"))) return;
 
-    const res = await fetch(`/api/plans/${planId}`, { method: "DELETE" });
-    if (!res.ok) {
+    try {
+      const store = await import("@/lib/planStore");
+      await store.deletePlan(planId);
+      router.push("/business-plan");
+    } catch {
       setError(t("form.deleteFailed"));
-      return;
     }
-    router.push("/business-plan");
-    router.refresh();
   }
 
   return (
@@ -875,7 +867,7 @@ export default function BusinessPlanForm({
               <div key={img.file} className="rounded-md border p-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`/api/uploads/${img.file}`}
+                  src={img.file}
                   alt={img.caption || `${t("form.photo.title")} ${i + 1}`}
                   className="mb-2 h-32 w-full rounded object-cover"
                 />

@@ -1,14 +1,23 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Nav from "@/components/Nav";
-import { listPlans } from "@/lib/backend";
-import { getT, getLang } from "@/lib/getLang";
+import { useI18n } from "@/components/LangProvider";
+import { listPlans } from "@/lib/planStore";
+import { BusinessPlan } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+type PlanRow = Pick<BusinessPlan, "id" | "title" | "updated_at">;
 
-export default async function BusinessPlanListPage() {
-  const plans = await listPlans();
-  const { t } = getT();
-  const lang = getLang();
+export default function BusinessPlanListPage() {
+  const { t, lang } = useI18n();
+  const [plans, setPlans] = useState<PlanRow[] | null>(null);
+
+  useEffect(() => {
+    listPlans()
+      .then(setPlans)
+      .catch(() => setPlans([]));
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -26,7 +35,7 @@ export default async function BusinessPlanListPage() {
           </Link>
         </div>
 
-        {plans.length > 0 ? (
+        {plans === null ? null : plans.length > 0 ? (
           <ul className="divide-y rounded-lg border bg-white">
             {plans.map((plan) => (
               <li key={plan.id}>
@@ -52,6 +61,8 @@ export default async function BusinessPlanListPage() {
             {t("plans.empty")}
           </div>
         )}
+
+        <p className="mt-4 text-xs text-slate-400">{t("plans.browserNote")}</p>
       </main>
     </div>
   );

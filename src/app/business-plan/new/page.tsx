@@ -1,13 +1,12 @@
+"use client";
+
 import Nav from "@/components/Nav";
 import BusinessPlanForm from "@/components/BusinessPlanForm";
 import { emptyContent } from "@/lib/businessPlanTemplate";
-import { getT, getLang } from "@/lib/getLang";
-
-export const dynamic = "force-dynamic";
+import { useI18n } from "@/components/LangProvider";
 
 export default function NewBusinessPlanPage() {
-  const { t } = getT();
-  const lang = getLang();
+  const { t, lang } = useI18n();
   return (
     <div className="min-h-screen bg-slate-50">
       <Nav />

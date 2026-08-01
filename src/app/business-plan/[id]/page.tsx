@@ -1,24 +1,26 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
 import Nav from "@/components/Nav";
 import BusinessPlanForm from "@/components/BusinessPlanForm";
-import { getPlan } from "@/lib/backend";
 import { normalizeContent } from "@/lib/businessPlanTemplate";
-import { getT } from "@/lib/getLang";
+import { useI18n } from "@/components/LangProvider";
+import { getPlan } from "@/lib/planStore";
+import { BusinessPlan } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
-
-export default async function BusinessPlanDetailPage({
+export default function BusinessPlanDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const plan = await getPlan(params.id);
+  const { t } = useI18n();
+  const [plan, setPlan] = useState<BusinessPlan | null | "loading">("loading");
 
-  if (!plan) {
-    notFound();
-  }
-
-  const { t } = getT();
+  useEffect(() => {
+    getPlan(params.id)
+      .then(setPlan)
+      .catch(() => setPlan(null));
+  }, [params.id]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -27,13 +29,19 @@ export default async function BusinessPlanDetailPage({
         <h1 className="mb-6 text-xl font-semibold text-slate-900">
           {t("plans.editTitle")}
         </h1>
-        <div className="rounded-lg border bg-white p-6">
-          <BusinessPlanForm
-            planId={plan.id}
-            initialTitle={plan.title}
-            initialContent={normalizeContent(plan.content)}
-          />
-        </div>
+        {plan === "loading" ? null : plan === null ? (
+          <div className="rounded-lg border border-dashed bg-white p-10 text-center text-sm text-slate-400">
+            {t("plans.notFound")}
+          </div>
+        ) : (
+          <div className="rounded-lg border bg-white p-6">
+            <BusinessPlanForm
+              planId={plan.id}
+              initialTitle={plan.title}
+              initialContent={normalizeContent(plan.content)}
+            />
+          </div>
+        )}
       </main>
     </div>
   );

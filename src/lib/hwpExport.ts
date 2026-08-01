@@ -124,10 +124,11 @@ async function imagesHtmlAndResolver(images: PlanImage[]): Promise<{
     const img = images[i];
     const key = `${IMG_PREFIX}${i}`;
     try {
-      const res = await fetch(`/api/uploads/${img.file}`);
+      const res = await fetch(img.file);
       if (!res.ok) continue;
       const blob = await res.blob();
-      const ext = img.file.split(".").pop()?.toLowerCase() ?? "png";
+      const mime = img.file.match(/^data:image\/([a-z]+);/i)?.[1]?.toLowerCase();
+      const ext = mime ?? img.file.split(".").pop()?.toLowerCase() ?? "png";
       const bitmap = await createImageBitmap(blob);
       const maxWidth = 480;
       const scale = Math.min(1, maxWidth / bitmap.width);

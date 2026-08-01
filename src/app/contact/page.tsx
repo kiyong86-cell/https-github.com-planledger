@@ -75,7 +75,7 @@ export default function ContactPage() {
 
         <div className="mt-8">
           <Link href="/" className="text-sm text-slate-500 hover:text-slate-900">
-            {t("support.toHome")}
+            {t("common.toHome")}
           </Link>
         </div>
       </main>

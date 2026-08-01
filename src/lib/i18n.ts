@@ -16,8 +16,6 @@ const ko: Dict = {
   "app.name": "PlanLedger",
   "nav.home": "홈",
   "nav.plans": "기획안",
-  "nav.support": "후원",
-  "nav.logout": "로그아웃",
   "nav.brand": "PlanLedger",
 
   // 홈
@@ -29,26 +27,16 @@ const ko: Dict = {
   "home.createNew": "새로 만들기",
   "home.newDoc": "+ 새 문서",
   "home.createHint": "내부/외부 기획안 · 기업 제안서 →",
+  "home.noSignup": "회원가입 없이 바로 쓸 수 있어요. 작성한 문서는 이 브라우저에만 저장됩니다.",
 
   // 로그인
   "login.continue": "로그인해서 계속하기",
-  "login.createAccount": "새 계정 만들기",
-  "login.name": "이름 또는 단체명",
-  "login.namePlaceholder": "예) 박기용 또는 두레줄기 사회적협동조합",
   "login.email": "이메일",
   "login.password": "비밀번호",
   "login.passwordPlaceholder": "6자 이상",
   "login.loginBtn": "로그인",
-  "login.signupBtn": "회원가입",
   "login.processing": "처리 중...",
-  "login.toSignup": "계정이 없으신가요? 회원가입",
-  "login.toLogin": "이미 계정이 있으신가요? 로그인",
   "login.invalidCred": "이메일 또는 비밀번호가 올바르지 않습니다.",
-  "login.confirmSent": "가입 확인 이메일을 보냈습니다. 이메일을 확인한 뒤 로그인해주세요.",
-  "login.agreePrefix": "",
-  "login.agreeLink": "개인정보처리방침",
-  "login.agreeSuffix": "에 동의합니다. (필수)",
-  "login.agreeRequired": "개인정보처리방침에 동의해주세요.",
 
   // 기획안 목록
   "plans.title": "기획안",
@@ -59,6 +47,8 @@ const ko: Dict = {
   "plans.newTitle": "새 기획안 작성",
   "plans.editTitle": "기획안 수정",
   "plans.defaultTitle": "새 기획안",
+  "plans.notFound": "문서를 찾을 수 없습니다. 다른 브라우저·기기에서 만든 문서는 보이지 않아요.",
+  "plans.browserNote": "문서는 이 브라우저에만 저장됩니다. 다른 기기에서 쓰려면 Word·한글로 내보내 옮겨주세요.",
 
   // 기획안 폼 - 유형
   "form.type.internal.label": "내부 기획안",
@@ -142,21 +132,7 @@ const ko: Dict = {
   "form.hwpFailed": "HWP 내보내기에 실패했습니다.",
   "form.deleteConfirm": "이 기획안을 삭제할까요? 되돌릴 수 없습니다.",
   "form.deleteFailed": "삭제에 실패했습니다.",
-  "form.loginRequired": "로그인이 필요합니다.",
 
-  // 후원
-  "support.title": "후원하기",
-  "support.body1": "이 도구는 누구나 무료로 쓰실 수 있어요.",
-  "support.body2": "혹시 도움이 되셨다면, 커피 한 잔의 마음으로 후원해주시면",
-  "support.body3": "더 좋은 기능을 만드는 데 큰 힘이 됩니다. 🙏",
-  "support.donateLink": "간편 송금으로 후원하기",
-  "support.byAccount": "계좌로 후원하기",
-  "support.bank": "은행",
-  "support.account": "계좌번호",
-  "support.holder": "예금주",
-  "support.notSet": "후원 정보가 아직 설정되지 않았습니다.",
-  "support.voluntary": "후원은 순수한 자발적 후원이며, 후원 여부와 관계없이 모든 기능을 제한 없이 사용하실 수 있습니다.",
-  "support.toHome": "← 홈으로",
 
   // 관리자
   "admin.title": "사용 통계 (제작자 전용)",
@@ -169,12 +145,6 @@ const ko: Dict = {
   "admin.colItem": "항목",
   "admin.colMonth": "이번 달",
   "admin.colTotal": "전체",
-  "admin.members": "가입자 목록",
-  "admin.memberCount": "명",
-  "admin.colName": "이름/단체명",
-  "admin.colEmail": "이메일",
-  "admin.colJoined": "가입일",
-  "admin.noName": "(이름 없음)",
   "admin.cloudOnly": "통계는 웹(클라우드 모드)에서만 제공됩니다.",
   "admin.type.export_docx": "Word 내보내기",
   "admin.type.export_hwpx": "한글 내보내기",
@@ -185,10 +155,10 @@ const ko: Dict = {
   // 개인정보처리방침
   "privacy.title": "개인정보처리방침",
   "privacy.toHome": "← 홈으로",
+  "common.toHome": "← 홈으로",
 
   // 네비 추가
   "nav.contact": "문의",
-  "nav.account": "계정",
   "nav.convert": "Word→한글",
 
   // Word→한글 변환
@@ -214,27 +184,12 @@ const ko: Dict = {
   "contact.send": "메일 보내기",
   "contact.note": "버튼을 누르면 메일 앱이 열립니다. 직접 위 주소로 보내셔도 됩니다.",
 
-  // 계정 / 회원탈퇴
-  "account.title": "계정 설정",
-  "account.email": "로그인 이메일",
-  "account.name": "이름 / 단체명",
-  "account.dangerTitle": "회원 탈퇴",
-  "account.dangerDesc": "탈퇴하면 계정과 작성한 모든 기획안·첨부 파일이 영구 삭제되며 되돌릴 수 없습니다.",
-  "account.deleteBtn": "회원 탈퇴하기",
-  "account.deleting": "탈퇴 처리 중...",
-  "account.confirm": "정말 탈퇴하시겠어요? 모든 데이터가 영구 삭제되며 되돌릴 수 없습니다.",
-  "account.confirmType": '확인을 위해 "삭제" 를 입력해주세요.',
-  "account.confirmWord": "삭제",
-  "account.deleteFailed": "탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.",
-  "account.deleted": "탈퇴가 완료되었습니다. 이용해주셔서 감사합니다.",
 };
 
 const en: Dict = {
   "app.name": "PlanLedger",
   "nav.home": "Home",
   "nav.plans": "Plans",
-  "nav.support": "Support",
-  "nav.logout": "Log out",
   "nav.brand": "PlanLedger",
 
   "home.greeting": "Welcome!",
@@ -245,25 +200,15 @@ const en: Dict = {
   "home.createNew": "Create new",
   "home.newDoc": "+ New document",
   "home.createHint": "Internal / external plan · business proposal →",
+  "home.noSignup": "No sign-up needed. Your documents are stored only in this browser.",
 
   "login.continue": "Log in to continue",
-  "login.createAccount": "Create a new account",
-  "login.name": "Name or organization",
-  "login.namePlaceholder": "e.g. John Doe or Acme Co.",
   "login.email": "Email",
   "login.password": "Password",
   "login.passwordPlaceholder": "at least 6 characters",
   "login.loginBtn": "Log in",
-  "login.signupBtn": "Sign up",
   "login.processing": "Processing...",
-  "login.toSignup": "No account yet? Sign up",
-  "login.toLogin": "Already have an account? Log in",
   "login.invalidCred": "Incorrect email or password.",
-  "login.confirmSent": "A confirmation email has been sent. Please confirm it and log in.",
-  "login.agreePrefix": "I agree to the ",
-  "login.agreeLink": "Privacy Policy",
-  "login.agreeSuffix": ". (required)",
-  "login.agreeRequired": "Please agree to the Privacy Policy.",
 
   "plans.title": "Plans",
   "plans.new": "+ New plan",
@@ -273,6 +218,8 @@ const en: Dict = {
   "plans.newTitle": "Create a new document",
   "plans.editTitle": "Edit document",
   "plans.defaultTitle": "New document",
+  "plans.notFound": "Document not found. Documents made in another browser or device won't appear here.",
+  "plans.browserNote": "Documents are stored only in this browser. Export to Word or HWP to move them elsewhere.",
 
   "form.type.internal.label": "Internal plan",
   "form.type.internal.desc": "A simple layout: overview, goals, program, schedule",
@@ -350,20 +297,7 @@ const en: Dict = {
   "form.hwpFailed": "Failed to export HWP.",
   "form.deleteConfirm": "Delete this document? This cannot be undone.",
   "form.deleteFailed": "Failed to delete.",
-  "form.loginRequired": "Login required.",
 
-  "support.title": "Support",
-  "support.body1": "This tool is free for everyone.",
-  "support.body2": "If it helped you, a small coffee-sized donation",
-  "support.body3": "goes a long way toward building better features. 🙏",
-  "support.donateLink": "Donate via quick transfer",
-  "support.byAccount": "Donate by bank transfer",
-  "support.bank": "Bank",
-  "support.account": "Account",
-  "support.holder": "Holder",
-  "support.notSet": "Donation info is not set up yet.",
-  "support.voluntary": "Donations are entirely voluntary. All features remain fully available regardless of whether you donate.",
-  "support.toHome": "← Home",
 
   "admin.title": "Usage stats (owner only)",
   "admin.onlyYou": " can view this page.",
@@ -375,12 +309,6 @@ const en: Dict = {
   "admin.colItem": "Item",
   "admin.colMonth": "This month",
   "admin.colTotal": "Total",
-  "admin.members": "Members",
-  "admin.memberCount": "",
-  "admin.colName": "Name/Org",
-  "admin.colEmail": "Email",
-  "admin.colJoined": "Joined",
-  "admin.noName": "(no name)",
   "admin.cloudOnly": "Stats are only available on the web (cloud mode).",
   "admin.type.export_docx": "Word export",
   "admin.type.export_hwpx": "Hangul export",
@@ -390,9 +318,9 @@ const en: Dict = {
 
   "privacy.title": "Privacy Policy",
   "privacy.toHome": "← Home",
+  "common.toHome": "← Home",
 
   "nav.contact": "Contact",
-  "nav.account": "Account",
   "nav.convert": "Word→HWP",
 
   "convert.title": "Word → HWP Converter",
@@ -416,18 +344,6 @@ const en: Dict = {
   "contact.send": "Send email",
   "contact.note": "This opens your email app. You can also email the address above directly.",
 
-  "account.title": "Account settings",
-  "account.email": "Login email",
-  "account.name": "Name / Organization",
-  "account.dangerTitle": "Delete account",
-  "account.dangerDesc": "Deleting removes your account and all documents and attachments permanently. This cannot be undone.",
-  "account.deleteBtn": "Delete my account",
-  "account.deleting": "Deleting...",
-  "account.confirm": "Really delete? All your data will be permanently removed and cannot be recovered.",
-  "account.confirmType": 'Type "DELETE" to confirm.',
-  "account.confirmWord": "DELETE",
-  "account.deleteFailed": "Deletion failed. Please try again shortly.",
-  "account.deleted": "Your account has been deleted. Thank you for using the service.",
 };
 
 const DICTS: Record<Lang, Dict> = { ko, en };

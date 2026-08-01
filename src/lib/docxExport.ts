@@ -378,11 +378,13 @@ async function imageParagraphs(images: PlanImage[]): Promise<Paragraph[]> {
   const paragraphs: Paragraph[] = [];
 
   for (const img of images) {
-    const ext = img.file.split(".").pop()?.toLowerCase() ?? "";
+    // 이미지가 data URL로 저장되어 있으므로 MIME에서 형식을 얻는다
+    const mime = img.file.match(/^data:image\/([a-z]+);/i)?.[1]?.toLowerCase();
+    const ext = mime ?? img.file.split(".").pop()?.toLowerCase() ?? "";
     const type = DOCX_IMAGE_TYPES[ext];
 
     try {
-      const res = await fetch(`/api/uploads/${img.file}`);
+      const res = await fetch(img.file);
       if (!res.ok) continue;
       const blob = await res.blob();
 

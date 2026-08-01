@@ -1,13 +1,20 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Nav from "@/components/Nav";
-import { listPlans } from "@/lib/backend";
-import { getT } from "@/lib/getLang";
+import { useI18n } from "@/components/LangProvider";
+import { listPlans } from "@/lib/planStore";
 
-export const dynamic = "force-dynamic";
+export default function HomePage() {
+  const { t } = useI18n();
+  const [planCount, setPlanCount] = useState<number | null>(null);
 
-export default async function HomePage() {
-  const planCount = (await listPlans()).length;
-  const { t } = getT();
+  useEffect(() => {
+    listPlans()
+      .then((p) => setPlanCount(p.length))
+      .catch(() => setPlanCount(0));
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -25,7 +32,7 @@ export default async function HomePage() {
           >
             <p className="text-sm text-slate-500">{t("home.myPlans")}</p>
             <p className="mt-1 text-2xl font-semibold text-slate-900">
-              {planCount}
+              {planCount ?? "–"}
               {t("home.count")}
             </p>
             <p className="mt-2 text-sm text-slate-400">{t("home.plansHint")}</p>
@@ -42,6 +49,8 @@ export default async function HomePage() {
             <p className="mt-2 text-sm text-slate-400">{t("home.createHint")}</p>
           </Link>
         </div>
+
+        <p className="mt-8 text-xs text-slate-400">{t("home.noSignup")}</p>
       </main>
     </div>
   );

@@ -8,12 +8,6 @@ export const dynamic = "force-dynamic";
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
 type EventRow = { type: string; user_id: string | null; created_at: string };
-type ProfileRow = {
-  id: string;
-  display_name: string | null;
-  email: string | null;
-  created_at: string;
-};
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -57,7 +51,7 @@ export default async function AdminPage() {
             href="/"
             className="mt-4 inline-block text-sm text-slate-500 hover:text-slate-900"
           >
-            {t("support.toHome")}
+            {t("common.toHome")}
           </Link>
         </main>
       </div>
@@ -73,14 +67,6 @@ export default async function AdminPage() {
 
   const events = (data ?? []) as EventRow[];
 
-  // 가입자 목록 (이름/단체명 포함)
-  const { data: profileData } = await supabase
-    .from("profiles")
-    .select("id, display_name, email, created_at")
-    .order("created_at", { ascending: false });
-
-  const profiles = (profileData ?? []) as ProfileRow[];
-
   const now = new Date();
   const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
     2,
@@ -89,14 +75,12 @@ export default async function AdminPage() {
 
   const totalByType: Record<string, number> = {};
   const monthByType: Record<string, number> = {};
-  const users = new Set<string>();
 
   for (const e of events) {
     totalByType[e.type] = (totalByType[e.type] ?? 0) + 1;
     if (e.created_at.startsWith(monthPrefix)) {
       monthByType[e.type] = (monthByType[e.type] ?? 0) + 1;
     }
-    if (e.user_id) users.add(e.user_id);
   }
 
   const totalExports =
@@ -128,10 +112,9 @@ export default async function AdminPage() {
           {t("admin.onlyYou")}
         </p>
 
-        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="mb-6 grid grid-cols-2 gap-4">
           <StatCard label={t("admin.totalExports")} value={totalExports} />
           <StatCard label={t("admin.monthExports")} value={monthExports} />
-          <StatCard label={t("admin.activeUsers")} value={users.size} />
         </div>
 
         <div className="overflow-hidden rounded-lg border bg-white">
@@ -161,37 +144,6 @@ export default async function AdminPage() {
           </table>
         </div>
 
-        <h2 className="mb-3 mt-10 text-lg font-semibold text-slate-900">
-          {t("admin.members")} ({profiles.length}
-          {t("admin.memberCount")})
-        </h2>
-        <div className="overflow-hidden rounded-lg border bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs text-slate-500">
-              <tr>
-                <th className="px-4 py-2">{t("admin.colName")}</th>
-                <th className="px-4 py-2">{t("admin.colEmail")}</th>
-                <th className="px-4 py-2 text-right">{t("admin.colJoined")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {profiles.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-2 font-medium text-slate-900">
-                    {p.display_name || t("admin.noName")}
-                  </td>
-                  <td className="px-4 py-2 text-slate-600">{p.email}</td>
-                  <td className="px-4 py-2 text-right text-slate-500">
-                    {new Date(p.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {profiles.length === 0 && (
-            <p className="p-4 text-sm text-slate-400">—</p>
-          )}
-        </div>
       </main>
     </div>
   );
