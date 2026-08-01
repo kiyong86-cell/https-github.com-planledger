@@ -8,6 +8,7 @@ const ALLOWED_TYPES = new Set([
   "export_hwpx",
   "export_pdf",
   "plan_created",
+  "convert_docx",
 ]);
 
 export async function POST(request: Request) {

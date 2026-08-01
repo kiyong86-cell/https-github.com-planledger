@@ -16,6 +16,7 @@ export default function Nav() {
   const links = [
     { href: "/", label: t("nav.home") },
     { href: "/business-plan", label: t("nav.plans") },
+    { href: "/convert", label: t("nav.convert") },
     { href: "/support", label: t("nav.support") },
     { href: "/contact", label: t("nav.contact") },
   ];

@@ -113,6 +113,7 @@ export default async function AdminPage() {
     "export_hwpx",
     "export_pdf",
     "plan_created",
+    "convert_docx",
   ];
 
   return (

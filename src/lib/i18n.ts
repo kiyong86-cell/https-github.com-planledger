@@ -180,6 +180,7 @@ const ko: Dict = {
   "admin.type.export_hwpx": "한글 내보내기",
   "admin.type.export_pdf": "PDF 인쇄/저장",
   "admin.type.plan_created": "기획안 생성",
+  "admin.type.convert_docx": "Word→한글 변환",
 
   // 개인정보처리방침
   "privacy.title": "개인정보처리방침",
@@ -188,6 +189,19 @@ const ko: Dict = {
   // 네비 추가
   "nav.contact": "문의",
   "nav.account": "계정",
+  "nav.convert": "Word→한글",
+
+  // Word→한글 변환
+  "convert.title": "Word → 한글 변환",
+  "convert.intro": "워드(.docx) 파일을 올리면 한글(.hwpx) 파일로 바꿔드립니다. 표의 행·열·병합과 사진이 유지됩니다.",
+  "convert.pick": "여기를 눌러 .docx 파일을 선택하세요",
+  "convert.selected": "선택된 파일",
+  "convert.button": "한글(.hwpx)로 변환하기",
+  "convert.converting": "변환 중... (파일 크기에 따라 몇 초 걸릴 수 있어요)",
+  "convert.done": "변환 완료! 다운로드가 시작됩니다.",
+  "convert.failed": "변환에 실패했습니다. 파일이 올바른 .docx인지 확인해주세요.",
+  "convert.privacy": "변환은 전부 이 브라우저 안에서만 처리되며, 파일이 서버로 전송되지 않습니다.",
+  "convert.limits": "표 구조·굵기·제목·사진은 유지되지만, 셀 배경색 등 일부 세부 서식은 단순화될 수 있습니다. 변환 후 한글에서 한 번 확인해주세요.",
 
   // 문의하기
   "contact.title": "문의하기",
@@ -372,12 +386,25 @@ const en: Dict = {
   "admin.type.export_hwpx": "Hangul export",
   "admin.type.export_pdf": "PDF print/save",
   "admin.type.plan_created": "Document created",
+  "admin.type.convert_docx": "Word→HWP conversion",
 
   "privacy.title": "Privacy Policy",
   "privacy.toHome": "← Home",
 
   "nav.contact": "Contact",
   "nav.account": "Account",
+  "nav.convert": "Word→HWP",
+
+  "convert.title": "Word → HWP Converter",
+  "convert.intro": "Upload a Word (.docx) file and get a Hangul (.hwpx) file. Table rows, columns, merges, and images are preserved.",
+  "convert.pick": "Click here to choose a .docx file",
+  "convert.selected": "Selected file",
+  "convert.button": "Convert to HWPX",
+  "convert.converting": "Converting... (may take a few seconds for large files)",
+  "convert.done": "Done! Your download will start.",
+  "convert.failed": "Conversion failed. Please check that the file is a valid .docx.",
+  "convert.privacy": "Everything runs inside your browser — your file is never uploaded to a server.",
+  "convert.limits": "Table structure, bold text, headings, and images are preserved, but some fine formatting (e.g. cell shading) may be simplified. Please review the result in Hangul.",
 
   "contact.title": "Contact us",
   "contact.intro": "Have a question or a feature request? Send it anytime.",
