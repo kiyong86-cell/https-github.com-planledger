@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Nav from "@/components/Nav";
 import { getLang, getT } from "@/lib/getLang";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "개인정보처리방침 — PlanLedger",
+  description: "PlanLedger의 개인정보 처리방침을 안내합니다.",
+};
 
 const SERVICE_NAME = "PlanLedger";
 const CONTACT = process.env.NEXT_PUBLIC_CONTACT || "kiyong0263@naver.com";
