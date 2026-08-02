@@ -185,7 +185,7 @@ const ko: Dict = {
   "auth.migrated": "문서 {n}건을 계정으로 옮겼습니다. 이제 다른 기기에서도 볼 수 있어요.",
   "auth.savedToAccount": "계정에 저장 중 — 다른 기기에서도 볼 수 있어요.",
   "auth.savedToBrowser": "이 브라우저에만 저장됩니다.",
-  "auth.loginToSync": "여러 기기에서 쓰려면 로그인하세요 →",
+  "auth.loginToSync": "회원가입하면 작성 중인 문서를 다른 기기에서도 볼 수 있어요 →",
 
   // Word→한글 변환
   "convert.title": "Word → 한글 변환",
@@ -372,7 +372,7 @@ const en: Dict = {
   "auth.migrated": "Moved {n} document(s) to your account. You can now access them from any device.",
   "auth.savedToAccount": "Saved to your account — available on other devices.",
   "auth.savedToBrowser": "Saved only in this browser.",
-  "auth.loginToSync": "Log in to use across devices →",
+  "auth.loginToSync": "Sign up to see your documents on other devices too →",
 
   "convert.title": "Word → HWP Converter",
   "convert.intro": "Upload a Word (.docx) file and get a Hangul (.hwpx) file. Table rows, columns, merges, and images are preserved.",
