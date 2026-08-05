@@ -1,3 +1,4 @@
+import { applyColumnWidths } from "./docxToHwpx";
 import { BusinessPlanContent, formatMoney, PlanImage } from "./types";
 
 const IMG_PREFIX = "app-image://";
@@ -17,6 +18,12 @@ const BORDER = "#C9D3CA";
 const CB = `border:1px solid ${BORDER};`;
 const TABLE_OPEN = `<table style="border:1px solid ${BORDER}">`;
 const TH = `${CB}background-color:${GREEN};color:#FFFFFF;text-align:center`;
+
+// 변환 엔진이 표의 열 너비를 무시하고 균등 분할하므로,
+// Word 내보내기와 같은 비율을 나중에 결과 파일에 직접 넣어준다.
+const TIME_COL = 1400;
+const CONTENT_WIDTH = 9026; // A4 - 기본 여백, Word 내보내기와 동일
+const BUDGET_COLS = [2200, 2900, 1500, 2426]; // 프로그램명/산출 내역/금액/비고
 
 function esc(text: string): string {
   return text
@@ -214,11 +221,40 @@ ${imagesSection}
 </body></html>`;
 
   const { htmlToHwpx } = await import("hwp-convert");
-  const bytes = await htmlToHwpx(html, {
+  let bytes: Uint8Array = await htmlToHwpx(html, {
     title: title || "기획안",
     creator: "기획안 관리",
     imageResolver: resolver,
   });
+
+  // 표가 나오는 순서대로 열 너비 비율을 모아 결과 파일에 반영한다.
+  const grids: number[][] = [];
+  if (hasTimetable) {
+    const dayW = Math.floor(
+      (CONTENT_WIDTH - TIME_COL) / Math.max(1, content.timetable.days.length)
+    );
+    grids.push([TIME_COL, ...content.timetable.days.map(() => dayW)]);
+  }
+  if (content.budget?.items?.length) grids.push(BUDGET_COLS);
+
+  if (grids.length > 0) {
+    try {
+      const JSZip = (await import("jszip")).default;
+      const zip = await JSZip.loadAsync(bytes);
+      const sectionFile = zip.file("Contents/section0.xml");
+      if (sectionFile) {
+        const sectionXml = await sectionFile.async("string");
+        zip.file("Contents/section0.xml", applyColumnWidths(sectionXml, grids));
+        zip.file("mimetype", "application/hwp+zip", { compression: "STORE" });
+        bytes = await zip.generateAsync({
+          type: "uint8array",
+          compression: "DEFLATE",
+        });
+      }
+    } catch {
+      // 폭 조정에 실패해도 균등 분할본을 그대로 내보낸다
+    }
+  }
 
   const blob = new Blob([new Uint8Array(bytes)], {
     type: "application/hwp+zip",
