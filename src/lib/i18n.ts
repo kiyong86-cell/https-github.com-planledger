@@ -21,12 +21,12 @@ const ko: Dict = {
   // 홈
   "home.hook1": "한글로 제출해야 하는데,",
   "home.hook2": "표가 자꾸 깨지시나요?",
-  "home.subtitle": "지원사업 기획안, 후원 제안서를 쓰고 Word·한글 파일로 서식 그대로 내보냅니다. 협동조합에서 서류를 쓰다 만들었고, 같은 일 하시는 분들께 무료로 열어둡니다.",
+  "home.subtitle": "지원사업 기획안, 후원 제안서를 쓰고 Word·한글 파일로 서식 그대로 내보냅니다. 대학교와 대안학교에서 기획안을 쓰다 만들었고, 같은 일 하시는 분들께 무료로 열어둡니다.",
   "home.card1.title": "기획안 만들기",
   "home.card1.body": "내부·외부 기획안과 기업 제안서를 작성합니다. 예산표는 합계가 자동 계산되고, 일정표는 칸 병합도 됩니다. 사진도 넣을 수 있어요. 다 쓰면 Word(.docx)나 한글(.hwpx)로 내려받습니다.",
   "home.card1.cta": "기획안 만들어보기",
   "home.card2.title": "Word 파일을 한글로 변환",
-  "home.card2.body": "워드(.docx) 파일을 올리면 한글(.hwpx)로 바꿔드립니다. 표의 행·열과 병합된 칸, 셀 배경색, 열 너비, 사진까지 원래 모양 그대로 유지됩니다. 관공서에 한글 파일로 제출해야 할 때 쓰세요.",
+  "home.card2.body": "워드(.docx) 파일을 올리면 한글(.hwpx)로 바꿔드립니다. 표의 행·열과 병합된 칸, 셀 배경색, 열 너비, 사진까지 원래 모양 그대로 유지됩니다. AI로 만든 워드 파일을 한글로 옮길 때, 관공서에 한글 파일로 제출해야 할 때 쓰세요.",
   "home.card2.cta": "변환하러 가기",
   "home.myPlans": "내 기획안",
   "home.count": "건",
@@ -193,7 +193,7 @@ const ko: Dict = {
 
   // Word→한글 변환
   "convert.title": "Word → 한글 변환",
-  "convert.intro": "워드(.docx) 파일을 올리면 한글(.hwpx) 파일로 바꿔드립니다. 표의 행·열·병합과 사진이 유지됩니다.",
+  "convert.intro": "워드(.docx) 파일을 올리면 한글(.hwpx) 파일로 바꿔드립니다. 표의 행·열·병합과 셀 색상, 사진이 유지됩니다. AI가 만들어준 워드 파일을 한글로 옮길 때도 쓰세요.",
   "convert.pick": "여기를 눌러 .docx 파일을 선택하세요",
   "convert.selected": "선택된 파일",
   "convert.button": "한글(.hwpx)로 변환하기",
@@ -224,12 +224,12 @@ const en: Dict = {
 
   "home.hook1": "Need to submit in HWP,",
   "home.hook2": "but your tables keep breaking?",
-  "home.subtitle": "Write grant proposals and sponsorship documents, then export them to Word or HWP with the formatting intact. Built while writing paperwork at a co-op, and opened up for free to anyone doing the same work.",
+  "home.subtitle": "Write grant proposals and sponsorship documents, then export them to Word or HWP with the formatting intact. Built while writing proposals at a university and an alternative school, and opened up for free to anyone doing the same work.",
   "home.card1.title": "Write a proposal",
   "home.card1.body": "Create internal or external plans and business proposals. Budget tables total themselves, schedule tables support merged cells, and you can attach photos. Export to Word (.docx) or HWP (.hwpx) when you are done.",
   "home.card1.cta": "Start a document",
   "home.card2.title": "Convert Word to HWP",
-  "home.card2.body": "Upload a Word (.docx) file and get an HWP (.hwpx) file back. Table rows and columns, merged cells, cell background colors, column widths, and images all keep their original shape.",
+  "home.card2.body": "Upload a Word (.docx) file and get an HWP (.hwpx) file back. Table rows and columns, merged cells, cell background colors, column widths, and images all keep their original shape. Handy for moving AI-generated Word files into HWP.",
   "home.card2.cta": "Go to converter",
   "home.myPlans": "My documents",
   "home.count": "",
