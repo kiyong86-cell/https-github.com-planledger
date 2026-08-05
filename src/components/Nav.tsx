@@ -40,26 +40,26 @@ export default function Nav() {
 
   return (
     <nav className="border-b bg-white">
-      <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-6">
+      <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
           <span className="font-semibold text-slate-900">{t("nav.brand")}</span>
-          <div className="flex gap-4 text-sm">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={
+                className={`whitespace-nowrap ${
                   pathname === link.href
                     ? "font-medium text-slate-900"
                     : "text-slate-500 hover:text-slate-900"
-                }
+                }`}
               >
                 {link.label}
               </Link>
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <LangToggle />
           {CLOUD_ENABLED &&
             checked &&

@@ -21,7 +21,7 @@ const ko: Dict = {
   // 홈
   "home.hook1": "한글로 제출해야 하는데,",
   "home.hook2": "표가 자꾸 깨지시나요?",
-  "home.subtitle": "지원사업 기획안, 후원 제안서를 쓰고 Word·한글 파일로 서식 그대로 내보냅니다. 대학교와 대안학교에서 기획안을 쓰다 만들었고, 같은 일 하시는 분들께 무료로 열어둡니다.",
+  "home.subtitle": "지원사업 기획안과 후원 제안서를 쓰고, Word·한글 파일로 서식 그대로 내보냅니다. 대학교와 대안학교, 교회에서 기획안을 쓰다 만들었습니다. 지하철에서 휴대폰으로도 작성하고 변환할 수 있어요. 같은 일 하시는 분들께 무료로 열어둡니다.",
   "home.card1.title": "기획안 만들기",
   "home.card1.body": "내부·외부 기획안과 기업 제안서를 작성합니다. 예산표는 합계가 자동 계산되고, 일정표는 칸 병합도 됩니다. 사진도 넣을 수 있어요. 다 쓰면 Word(.docx)나 한글(.hwpx)로 내려받습니다.",
   "home.card1.cta": "기획안 만들어보기",
@@ -224,7 +224,7 @@ const en: Dict = {
 
   "home.hook1": "Need to submit in HWP,",
   "home.hook2": "but your tables keep breaking?",
-  "home.subtitle": "Write grant proposals and sponsorship documents, then export them to Word or HWP with the formatting intact. Built while writing proposals at a university and an alternative school, and opened up for free to anyone doing the same work.",
+  "home.subtitle": "Write grant proposals and sponsorship documents, then export them to Word or HWP with the formatting intact. Built while writing proposals at a university, an alternative school, and a church. Works on your phone too, so you can draft or convert on the move. Free for anyone doing the same work.",
   "home.card1.title": "Write a proposal",
   "home.card1.body": "Create internal or external plans and business proposals. Budget tables total themselves, schedule tables support merged cells, and you can attach photos. Export to Word (.docx) or HWP (.hwpx) when you are done.",
   "home.card1.cta": "Start a document",
