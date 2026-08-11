@@ -4,7 +4,7 @@
 // 여러 기기에서 문서를 보고 싶은 사람만 가입한다.
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Nav from "@/components/Nav";
 import { useI18n } from "@/components/LangProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -12,6 +12,10 @@ import { countLocalPlans, migrateLocalPlansToCloud } from "@/lib/planStore";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // ?next=/school 처럼 돌아갈 곳을 지정할 수 있다. 사이트 안 경로만 허용한다.
+  const nextParam = searchParams.get("next");
+  const nextPath = nextParam?.startsWith("/") ? nextParam : null;
   const { t } = useI18n();
   const [mode, setMode] = useState<"login" | "signup">("signup");
   const [email, setEmail] = useState("");
@@ -42,7 +46,7 @@ export default function LoginPage() {
     } catch {
       // KAIROS 주간 데이터 이전 실패도 로그인을 막지 않는다
     }
-    router.push("/business-plan");
+    router.push(nextPath ?? "/business-plan");
     router.refresh();
   }
 

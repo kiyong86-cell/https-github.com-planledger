@@ -1,19 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { studentNoFromEmail } from "@/lib/school";
 
-export default function SchoolHeader({ title }: { title: string }) {
+export default function SchoolHeader({
+  title,
+  showTeacherLink = false,
+  showAdminLink = false,
+}: {
+  title: string;
+  showTeacherLink?: boolean;
+  showAdminLink?: boolean;
+}) {
   const router = useRouter();
-  const [who, setWho] = useState("");
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     createClient()
       .auth.getUser()
-      .then(({ data }) => setWho(studentNoFromEmail(data.user?.email)))
-      .catch(() => setWho(""));
+      .then(({ data }) => setEmail(data.user?.email ?? ""))
+      .catch(() => setEmail(""));
   }, []);
 
   async function logout() {
@@ -24,12 +32,25 @@ export default function SchoolHeader({ title }: { title: string }) {
 
   return (
     <header className="border-b bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <span className="font-semibold tracking-wide text-slate-900">
-          KAIROS <span className="text-sm font-normal text-slate-400">{title}</span>
-        </span>
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
+        <div className="flex items-center gap-4">
+          <Link href="/school" className="font-semibold tracking-wide text-slate-900">
+            KAIROS
+          </Link>
+          <span className="text-sm text-slate-400">{title}</span>
+        </div>
         <div className="flex items-center gap-3 text-sm text-slate-500">
-          {who && <span>{who}</span>}
+          {showTeacherLink && (
+            <Link href="/school/teacher" className="hover:text-slate-900">
+              학생 현황
+            </Link>
+          )}
+          {showAdminLink && (
+            <Link href="/school/admin" className="hover:text-slate-900">
+              승인 관리
+            </Link>
+          )}
+          {email && <span className="hidden sm:inline">{email}</span>}
           <button onClick={logout} className="hover:text-slate-900">
             로그아웃
           </button>

@@ -1,36 +1,40 @@
 // 학교 전용 구역(/school) 공통 규칙.
-// 학생은 이메일 대신 학번으로 로그인한다. Supabase Auth는 이메일 형식을 요구하므로
-// 내부적으로 "학번@<도메인>" 형태로 바꿔서 쓴다. 학생에게는 보이지 않는다.
+// 사이트 계정(이메일)은 누구나 만들 수 있고, KAIROS는 관리자가 승인한 사람만 들어간다.
 
-export const STUDENT_EMAIL_DOMAIN = "kairos.school";
+export type KairosRole =
+  | "pending" // 신청함, 승인 대기
+  | "student"
+  | "teacher"
+  | "admin"
+  | "rejected";
 
-export function studentEmail(studentNo: string): string {
-  return `${studentNo.trim().toLowerCase()}@${STUDENT_EMAIL_DOMAIN}`;
-}
-
-export function studentNoFromEmail(email: string | null | undefined): string {
-  if (!email) return "";
-  const [id, domain] = email.split("@");
-  return domain === STUDENT_EMAIL_DOMAIN ? id : email;
-}
-
-/** 교사 계정 이메일 목록. 쉼표로 구분해 환경변수에 넣는다. */
-export function teacherEmails(): string[] {
-  return (process.env.SCHOOL_TEACHER_EMAILS ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-export function isTeacherEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return teacherEmails().includes(email.toLowerCase());
-}
-
-export type StudentProfile = {
+export type KairosMember = {
   user_id: string;
-  student_no: string;
+  email: string;
   name: string;
+  student_no: string;
   grade: string;
   klass: string;
+  requested_role: "student" | "teacher";
+  role: KairosRole;
+  created_at: string;
+  approved_at: string | null;
+};
+
+/** 교사·관리자 — 학생 기록을 볼 수 있는 사람 */
+export function isStaff(role: KairosRole | null | undefined): boolean {
+  return role === "teacher" || role === "admin";
+}
+
+/** KAIROS 화면에 들어갈 수 있는 사람 */
+export function isApproved(role: KairosRole | null | undefined): boolean {
+  return role === "student" || role === "teacher" || role === "admin";
+}
+
+export const ROLE_LABEL: Record<KairosRole, string> = {
+  pending: "승인 대기",
+  student: "학생",
+  teacher: "교사",
+  admin: "관리자",
+  rejected: "거절됨",
 };

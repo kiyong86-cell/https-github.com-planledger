@@ -46,23 +46,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 학교 전용 구역: 로그인해야 열리고, 교사 화면은 교사 계정만 열린다.
-  if (path.startsWith("/school/")) {
-    const schoolLogin = request.nextUrl.clone();
-    schoolLogin.pathname = "/school";
-
-    if (!user) return NextResponse.redirect(schoolLogin);
-
-    if (path.startsWith("/school/teacher")) {
-      const teachers = (process.env.SCHOOL_TEACHER_EMAILS ?? "")
-        .split(",")
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean);
-      if (!teachers.includes((user.email ?? "").toLowerCase())) {
-        schoolLogin.pathname = "/school/kairos";
-        return NextResponse.redirect(schoolLogin);
-      }
-    }
+  // 학교 전용 구역: 로그인해야 열린다.
+  // 승인 여부와 역할(학생·교사·관리자)은 각 페이지에서 확인한다.
+  if (!user && path.startsWith("/school/")) {
+    const schoolEntry = request.nextUrl.clone();
+    schoolEntry.pathname = "/school";
+    return NextResponse.redirect(schoolEntry);
   }
 
   return response;
