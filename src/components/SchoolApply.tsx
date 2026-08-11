@@ -45,7 +45,16 @@ export default function SchoolApply({
     });
 
     if (error) {
-      setError("신청을 보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+      // 표가 아직 없으면(설치 전) 무엇을 해야 하는지 바로 알려준다.
+      const missingTable =
+        error.code === "PGRST205" ||
+        error.code === "42P01" ||
+        /kairos_members/.test(error.message ?? "");
+      setError(
+        missingTable
+          ? "아직 준비가 끝나지 않았습니다. 관리자가 Supabase에서 kairos.sql을 실행해야 신청할 수 있어요."
+          : `신청을 보내지 못했습니다. (${error.message})`
+      );
       setSending(false);
       return;
     }
