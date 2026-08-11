@@ -36,6 +36,12 @@ export default function LoginPage() {
     } catch {
       // 이전 실패해도 로그인 자체는 계속 진행
     }
+    try {
+      const { migrateLocalWeeksToCloud } = await import("@/lib/kairosStore");
+      await migrateLocalWeeksToCloud();
+    } catch {
+      // KAIROS 주간 데이터 이전 실패도 로그인을 막지 않는다
+    }
     router.push("/business-plan");
     router.refresh();
   }

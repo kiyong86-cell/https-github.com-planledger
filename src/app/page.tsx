@@ -63,6 +63,7 @@ export default function HomePage() {
               {t("home.card2.cta")}
             </Link>
           </div>
+
         </div>
 
         {planCount !== null && planCount > 0 && (

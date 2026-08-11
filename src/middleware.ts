@@ -38,15 +38,36 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname.startsWith("/admin")) {
+  const path = request.nextUrl.pathname;
+
+  if (!user && path.startsWith("/admin")) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     return NextResponse.redirect(loginUrl);
+  }
+
+  // 학교 전용 구역: 로그인해야 열리고, 교사 화면은 교사 계정만 열린다.
+  if (path.startsWith("/school/")) {
+    const schoolLogin = request.nextUrl.clone();
+    schoolLogin.pathname = "/school";
+
+    if (!user) return NextResponse.redirect(schoolLogin);
+
+    if (path.startsWith("/school/teacher")) {
+      const teachers = (process.env.SCHOOL_TEACHER_EMAILS ?? "")
+        .split(",")
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+      if (!teachers.includes((user.email ?? "").toLowerCase())) {
+        schoolLogin.pathname = "/school/kairos";
+        return NextResponse.redirect(schoolLogin);
+      }
+    }
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/school/:path*"],
 };
