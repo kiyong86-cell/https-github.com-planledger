@@ -12,7 +12,6 @@ export type KairosMember = {
   user_id: string;
   email: string;
   name: string;
-  student_no: string;
   grade: string;
   klass: string;
   requested_role: "student" | "teacher";

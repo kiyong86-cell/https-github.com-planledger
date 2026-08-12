@@ -35,7 +35,7 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
           .from("kairos_members")
           .select("*")
           .in("role", ["student", "teacher", "admin"])
-          .order("student_no"),
+          .order("grade").order("klass").order("name"),
         supabase.from("kairos_weeks").select("user_id, data").eq("week", week),
       ]);
 
@@ -97,7 +97,6 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50 text-xs text-slate-500">
-                <th className="border-b px-3 py-2 text-left">학번</th>
                 <th className="border-b px-3 py-2 text-left">이름</th>
                 <th className="border-b px-3 py-2">학년/반</th>
                 <th className="border-b px-3 py-2">작성</th>
@@ -110,13 +109,13 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
             <tbody>
               {rows === null ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
                     불러오는 중...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
                     승인된 학생이 없습니다.
                   </td>
                 </tr>
@@ -152,7 +151,6 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
 
                   return (
                     <tr key={r.user_id} className="border-b last:border-0">
-                      <td className="px-3 py-2">{r.student_no || "-"}</td>
                       <td className="px-3 py-2 font-medium text-slate-900">
                         {r.name || r.email}
                       </td>

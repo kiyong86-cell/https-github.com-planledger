@@ -20,7 +20,6 @@ export default function SchoolApply({
   const [requestedRole, setRequestedRole] = useState<"student" | "teacher">(
     "student"
   );
-  const [studentNo, setStudentNo] = useState("");
   const [grade, setGrade] = useState("");
   const [klass, setKlass] = useState("");
   const [agreed, setAgreed] = useState(false);
@@ -44,7 +43,6 @@ export default function SchoolApply({
       user_id: userId,
       email,
       name: name.trim(),
-      student_no: studentNo.trim(),
       grade: grade.trim(),
       klass: klass.trim(),
       requested_role: requestedRole,
@@ -112,16 +110,7 @@ export default function SchoolApply({
       </div>
 
       {requestedRole === "student" && (
-        <div className="grid grid-cols-3 gap-2">
-          <label className="col-span-3">
-            <span className="mb-1 block text-sm text-slate-700">학번</span>
-            <input
-              value={studentNo}
-              onChange={(e) => setStudentNo(e.target.value)}
-              className="w-full rounded-md border px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
-              placeholder="예) 20261234"
-            />
-          </label>
+        <div className="grid grid-cols-2 gap-2">
           <label>
             <span className="mb-1 block text-sm text-slate-700">학년</span>
             <input
@@ -145,7 +134,7 @@ export default function SchoolApply({
 
       <div className="rounded-md border bg-slate-50 p-3">
         <p className="text-xs leading-relaxed text-slate-600">
-          <b>수집 항목</b> 이름, 구분(학생·교사), 학번·학년·반, 이메일
+          <b>수집 항목</b> 이름, 구분(학생·교사), 학년·반, 이메일
           <br />
           <b>이용 목적</b> 이용 승인과 본인 확인, 담당 선생님의 학습 계획 확인
           <br />

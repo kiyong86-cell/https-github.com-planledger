@@ -36,9 +36,10 @@ const KO = [
     h: "3. 정직이들(학교 시간 계획표)에서 추가로 수집하는 정보",
     p: [
       "학교 전용 기능인 '정직이들'을 이용 신청하면 아래 정보를 추가로 수집합니다.",
-      "· 이름, 구분(학생·교사), 학번, 학년, 반 — 이용 승인과 본인 확인 목적",
+      "· 이름, 구분(학생·교사), 학년, 반 — 이용 승인과 본인 확인 목적",
       "· 주간 시간 계획과 실행 기록, 할 일, 묵상·감사·자기평가로 적은 내용 — 서비스 제공 목적",
-      "이용이 승인되면 담당 교사와 관리자가 학생의 이름·학번·학년·반과 주간 계획 기록(작성 여부, 계획·실행 시간, 달성률, 할 일 완료 수)을 볼 수 있습니다. 학습 지도 목적 외에는 사용하지 않습니다.",
+      "학번은 수집하지 않습니다.",
+      "이용이 승인되면 담당 교사와 관리자가 학생의 이름·학년·반과 주간 계획 기록(작성 여부, 계획·실행 시간, 달성률, 할 일 완료 수)을 볼 수 있습니다. 학습 지도 목적 외에는 사용하지 않습니다.",
       "만 14세 미만 아동은 법정대리인의 동의를 받은 뒤 신청해야 합니다.",
     ],
   },
@@ -57,12 +58,19 @@ const KO = [
     ],
   },
   {
-    h: "6. 처리 위탁과 국외 이전",
+    h: "6. 자료가 실제로 어디에 저장되나요 (처리 위탁과 국외 이전)",
     p: [
-      "서비스는 아래 업체에 개인정보 처리를 위탁하며, 해당 업체의 서버가 국외에 있습니다.",
-      "· Vercel Inc. (미국) — 웹사이트 호스팅. 접속 과정의 통상적인 접속 기록(IP 등)이 처리될 수 있습니다.",
-      "· Supabase Inc. (서버 위치: 호주 시드니) — 계정 인증, 데이터베이스, 파일 보관. 위 2·3항의 정보가 저장됩니다.",
-      "이용자는 국외 이전을 원하지 않을 경우 계정을 만들지 않고 로그인 없이 서비스를 이용할 수 있습니다.",
+      "이 서비스는 개인이 만들어 무료로 운영합니다. 자체 서버실을 두는 대신, 전 세계에서 널리 쓰이는 두 곳의 서비스를 빌려 씁니다. 개인정보를 다루는 외부 업체를 이용하면 어디에 맡기는지 알려드려야 하므로 아래에 밝힙니다.",
+
+      "· Vercel Inc. (미국) — 웹사이트를 인터넷에 띄워주는 곳입니다. 홈페이지 화면을 전달하는 역할만 하며, 기획안 내용이나 학생 기록을 따로 저장하지 않습니다. 다만 웹사이트를 운영하면 자동으로 남는 접속 기록(접속 시각, IP 주소, 브라우저 종류)이 이 회사 시스템에서 처리됩니다. 이는 어떤 웹사이트를 방문하든 남는 일반적인 기록입니다.",
+
+      "· Supabase Inc. (서버 위치: 호주 시드니) — 계정과 자료가 실제로 저장되는 곳입니다. 위 2·3항의 정보(이메일, 저장한 문서, 정직이들 기록)가 여기에 보관됩니다. 비밀번호는 암호화되어 저장되며 운영자도 원래 값을 볼 수 없습니다. 데이터베이스는 '본인만 자기 자료를 읽고 쓸 수 있게' 잠금 설정(RLS)이 걸려 있어, 다른 이용자가 남의 자료를 볼 수 없습니다. 교사·관리자만 예외적으로 학생 기록을 볼 수 있고, 그 권한은 관리자가 승인한 계정에만 부여됩니다.",
+
+      "두 회사 모두 이용자의 자료를 광고나 자체 사업 목적으로 사용하지 않으며, 서비스 제공에 필요한 범위에서만 처리합니다. 저장 공간을 빌려주는 역할이라고 보시면 됩니다.",
+
+      "서버가 국외(미국·호주)에 있는 이유는 국내 서비스보다 무료 요금제 조건이 좋아 이용료 없이 운영할 수 있기 때문입니다. 국외에 저장된다고 해서 아무나 열람할 수 있는 것은 아니며, 접속 구간은 HTTPS로 암호화되고 접근 권한도 위와 같이 제한됩니다.",
+
+      "국외 이전이 마음에 걸리시면 계정을 만들지 않고 로그인 없이 기획안 작성과 Word→한글 변환을 그대로 쓰실 수 있습니다. 이 경우 자료가 본인 브라우저 밖으로 나가지 않습니다. 이미 만든 계정과 자료는 언제든 삭제를 요청하실 수 있고, 요청을 받으면 지체 없이 파기합니다.",
     ],
   },
   {
@@ -120,9 +128,10 @@ const EN = [
     h: "3. Additional Information for 정직이들 (School Timetable)",
     p: [
       "If you apply to use the school-only feature, we additionally collect:",
-      "· Name, role (student or teacher), student number, grade and class — to approve access and identify you",
+      "· Name, role (student or teacher), grade and class — to approve access and identify you",
       "· Weekly plan and actual time records, to-do items, and the reflection and self-review notes you write",
-      "Once approved, your teacher and the administrator can see your name, student number, grade, class, and weekly records (whether you filled it in, planned and actual hours, goal rate, completed to-dos). This is used only for study guidance.",
+      "Student ID numbers are not collected.",
+      "Once approved, your teacher and the administrator can see your name, grade, class, and weekly records (whether you filled it in, planned and actual hours, goal rate, completed to-dos). This is used only for study guidance.",
       "Children under 14 must obtain consent from a legal guardian before applying.",
     ],
   },
@@ -141,12 +150,19 @@ const EN = [
     ],
   },
   {
-    h: "6. Processors and Overseas Transfer",
+    h: "6. Where Your Data Actually Lives (Processors and Overseas Transfer)",
     p: [
-      "The Service entrusts processing to the following providers, whose servers are located outside Korea:",
-      "· Vercel Inc. (USA) — web hosting; standard access logs (such as IP addresses) may be processed.",
-      "· Supabase Inc. (servers in Sydney, Australia) — authentication, database and file storage for the data in sections 2 and 3.",
-      "If you prefer no overseas transfer, you can use the Service without creating an account.",
+      "This Service is built and run for free by an individual. Instead of operating its own servers, it rents two widely used platforms. Because they process personal data on our behalf, we disclose them here:",
+
+      "· Vercel Inc. (USA) — hosts the website itself. It delivers the pages to your browser and does not separately store your proposals or student records. Standard access logs (time of access, IP address, browser type) are processed there, as with any website you visit.",
+
+      "· Supabase Inc. (servers in Sydney, Australia) — where accounts and data are actually stored, covering the information in sections 2 and 3. Passwords are stored encrypted and the operator cannot read them. The database enforces row-level security so each person can read and write only their own data; teachers and administrators are the only exception, and those permissions are granted solely by the administrator.",
+
+      "Neither company uses your data for advertising or their own purposes; they process it only as needed to run the Service — think of them as rented storage and delivery.",
+
+      "The servers are abroad because their free tiers allow this Service to run at no cost. Being stored abroad does not mean the data is open to anyone: traffic is encrypted with HTTPS and access is restricted as described above.",
+
+      "If you would rather avoid overseas transfer, you can use proposal writing and Word-to-HWP conversion without creating an account — in that case your data never leaves your browser. You may also request deletion of an existing account and its data at any time, and it will be destroyed without delay.",
     ],
   },
   {

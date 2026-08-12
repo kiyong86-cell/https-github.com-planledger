@@ -12,7 +12,6 @@ type Person = {
   user_id: string;
   email: string;
   name: string;
-  student_no: string;
   grade: string;
   klass: string;
   requested_role: string;
@@ -84,7 +83,6 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
         user_id: p.id,
         email: p.email ?? "",
         name: p.display_name ?? "",
-        student_no: "",
         grade: "",
         klass: "",
         requested_role: "",
@@ -106,7 +104,6 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
         user_id: m.user_id,
         email: m.email || existing?.email || "",
         name: m.name || existing?.name || "",
-        student_no: m.student_no,
         grade: m.grade,
         klass: m.klass,
         requested_role: m.requested_role,
@@ -142,7 +139,6 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
           user_id: person.user_id,
           email: person.email,
           name: person.name,
-          student_no: person.student_no,
           grade: person.grade,
           klass: person.klass,
           requested_role: person.requested_role || "student",
@@ -234,7 +230,6 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
               <tr className="bg-slate-50 text-xs text-slate-500">
                 <th className="border-b px-3 py-2 text-left">이름</th>
                 <th className="border-b px-3 py-2 text-left">이메일</th>
-                <th className="border-b px-3 py-2">학번</th>
                 <th className="border-b px-3 py-2">학년/반</th>
                 <th className="border-b px-3 py-2">신청</th>
                 <th className="border-b px-3 py-2">개인정보 동의</th>
@@ -245,13 +240,13 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
             <tbody>
               {rows === null ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
                     불러오는 중...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
                     {filter === "pending"
                       ? "승인을 기다리는 신청이 없습니다."
                       : "표시할 사람이 없습니다."}
@@ -269,9 +264,6 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
                         )}
                       </td>
                       <td className="px-3 py-2 text-slate-500">{p.email || "-"}</td>
-                      <td className="px-3 py-2 text-center">
-                        {p.student_no || "-"}
-                      </td>
                       <td className="px-3 py-2 text-center text-slate-500">
                         {[p.grade, p.klass].filter(Boolean).join("-") || "-"}
                       </td>
