@@ -16,9 +16,19 @@ type Person = {
   grade: string;
   klass: string;
   requested_role: string;
-  role: KairosRole | null; // null = KAIROS 신청 안 함
+  role: KairosRole | null; // null = 정직이들 신청 안 함
   created_at: string;
+  privacy_agreed_at: string | null; // 가입할 때 방침에 동의한 시각
+  privacy_version: string | null;
+  consent_at: string | null; // 정직이들 신청할 때 동의한 시각
+  consent_version: string | null;
 };
+
+function agreeLabel(at: string | null, version: string | null): string {
+  if (!at) return "";
+  const date = new Date(at).toLocaleDateString("ko-KR");
+  return version ? `${date} (v${version})` : date;
+}
 
 type Filter = "pending" | "kairos" | "all";
 
@@ -40,7 +50,11 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
     const supabase = createClient();
     const [members, profiles] = await Promise.all([
       supabase.from("kairos_members").select("*"),
-      supabase.from("profiles").select("id, email, display_name, created_at"),
+      supabase
+        .from("profiles")
+        .select(
+          "id, email, display_name, created_at, privacy_agreed_at, privacy_version"
+        ),
     ]);
 
     if (members.error) {
@@ -63,6 +77,8 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
       email: string | null;
       display_name: string | null;
       created_at: string;
+      privacy_agreed_at: string | null;
+      privacy_version: string | null;
     }[]).forEach((p) => {
       byUser.set(p.id, {
         user_id: p.id,
@@ -74,10 +90,17 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
         requested_role: "",
         role: null,
         created_at: p.created_at,
+        privacy_agreed_at: p.privacy_agreed_at ?? null,
+        privacy_version: p.privacy_version ?? null,
+        consent_at: null,
+        consent_version: null,
       });
     });
 
-    ((members.data ?? []) as KairosMember[]).forEach((m) => {
+    ((members.data ?? []) as (KairosMember & {
+      consent_at?: string | null;
+      consent_version?: string | null;
+    })[]).forEach((m) => {
       const existing = byUser.get(m.user_id);
       byUser.set(m.user_id, {
         user_id: m.user_id,
@@ -89,6 +112,10 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
         requested_role: m.requested_role,
         role: m.role,
         created_at: existing?.created_at ?? m.created_at,
+        privacy_agreed_at: existing?.privacy_agreed_at ?? null,
+        privacy_version: existing?.privacy_version ?? null,
+        consent_at: m.consent_at ?? null,
+        consent_version: m.consent_version ?? null,
       });
     });
 
@@ -210,6 +237,7 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
                 <th className="border-b px-3 py-2">학번</th>
                 <th className="border-b px-3 py-2">학년/반</th>
                 <th className="border-b px-3 py-2">신청</th>
+                <th className="border-b px-3 py-2">개인정보 동의</th>
                 <th className="border-b px-3 py-2">권한</th>
                 <th className="border-b px-3 py-2">처리</th>
               </tr>
@@ -217,13 +245,13 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
             <tbody>
               {rows === null ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
                     불러오는 중...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
                     {filter === "pending"
                       ? "승인을 기다리는 신청이 없습니다."
                       : "표시할 사람이 없습니다."}
@@ -253,6 +281,29 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
                           : p.requested_role === "student"
                           ? "학생"
                           : "-"}
+                      </td>
+                      <td className="px-3 py-2 text-center text-xs leading-snug">
+                        {p.privacy_agreed_at || p.consent_at ? (
+                          <span className="text-emerald-700">
+                            {p.privacy_agreed_at && (
+                              <>
+                                가입{" "}
+                                {agreeLabel(
+                                  p.privacy_agreed_at,
+                                  p.privacy_version
+                                )}
+                              </>
+                            )}
+                            {p.privacy_agreed_at && p.consent_at && <br />}
+                            {p.consent_at && (
+                              <>
+                                신청 {agreeLabel(p.consent_at, p.consent_version)}
+                              </>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">기록 없음</span>
+                        )}
                       </td>
                       <td className="px-3 py-2 text-center">
                         {p.role === null ? (

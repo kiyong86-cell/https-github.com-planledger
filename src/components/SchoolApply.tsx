@@ -3,8 +3,10 @@
 // KAIROS 이용 신청 — 사이트에 로그인한 사람이 이름·구분을 적어 신청한다.
 // 관리자가 승인해야 실제로 들어갈 수 있다.
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PRIVACY_VERSION } from "@/lib/privacy";
 
 export default function SchoolApply({
   userId,
@@ -21,6 +23,7 @@ export default function SchoolApply({
   const [studentNo, setStudentNo] = useState("");
   const [grade, setGrade] = useState("");
   const [klass, setKlass] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
@@ -29,6 +32,10 @@ export default function SchoolApply({
     setError(null);
     if (!name.trim()) {
       setError("이름을 적어주세요.");
+      return;
+    }
+    if (!agreed) {
+      setError("개인정보 수집·이용에 동의해야 신청할 수 있습니다.");
       return;
     }
 
@@ -42,6 +49,8 @@ export default function SchoolApply({
       klass: klass.trim(),
       requested_role: requestedRole,
       role: "pending",
+      consent_at: new Date().toISOString(),
+      consent_version: PRIVACY_VERSION,
     });
 
     if (error) {
@@ -133,6 +142,39 @@ export default function SchoolApply({
           </label>
         </div>
       )}
+
+      <div className="rounded-md border bg-slate-50 p-3">
+        <p className="text-xs leading-relaxed text-slate-600">
+          <b>수집 항목</b> 이름, 구분(학생·교사), 학번·학년·반, 이메일
+          <br />
+          <b>이용 목적</b> 이용 승인과 본인 확인, 담당 선생님의 학습 계획 확인
+          <br />
+          <b>보관 기간</b> 이용을 그만두거나 삭제를 요청할 때까지
+        </p>
+        <label className="mt-2 flex items-start gap-2 text-xs text-slate-700">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            위 내용과{" "}
+            <Link
+              href="/privacy"
+              target="_blank"
+              className="text-slate-900 underline"
+            >
+              개인정보처리방침
+            </Link>
+            에 동의합니다. (필수)
+            <br />
+            <span className="text-slate-400">
+              만 14세 미만이면 보호자의 동의가 필요합니다.
+            </span>
+          </span>
+        </label>
+      </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

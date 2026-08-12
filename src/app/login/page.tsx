@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Nav from "@/components/Nav";
 import { useI18n } from "@/components/LangProvider";
 import { createClient } from "@/lib/supabase/client";
+import { PRIVACY_VERSION } from "@/lib/privacy";
 import { countLocalPlans, migrateLocalPlansToCloud } from "@/lib/planStore";
 
 export default function LoginPage() {
@@ -31,17 +32,27 @@ export default function LoginPage() {
   }, []);
 
   // 로그인 성공 후: 브라우저에 있던 문서를 계정으로 옮기고 목록으로 이동
-  async function afterSignIn() {
-    // 관리자 화면에서 가입자를 볼 수 있도록 본인 정보를 남긴다.
+  // agreedNow=true 이면 방금 개인정보 처리방침에 동의한 것이므로 그 기록을 남긴다.
+  async function afterSignIn(agreedNow = false) {
     try {
       const supabase = createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        await supabase
-          .from("profiles")
-          .upsert({ id: user.id, email: user.email ?? "" }, { onConflict: "id" });
+        await supabase.from("profiles").upsert(
+          {
+            id: user.id,
+            email: user.email ?? "",
+            ...(agreedNow
+              ? {
+                  privacy_agreed_at: new Date().toISOString(),
+                  privacy_version: PRIVACY_VERSION,
+                }
+              : {}),
+          },
+          { onConflict: "id" }
+        );
       }
     } catch {
       // 기록 실패는 로그인을 막지 않는다
@@ -96,7 +107,7 @@ export default function LoginPage() {
         return;
       }
       if (data.session) {
-        await afterSignIn();
+        await afterSignIn(true); // 가입 = 방금 방침에 동의함
         return;
       }
       setMessage(t("auth.confirmSent"));
