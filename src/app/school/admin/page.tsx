@@ -9,5 +9,5 @@ export default async function SchoolAdminPage() {
   if (!session) redirect("/school");
   if (!session.isAdmin) redirect("/school");
 
-  return <SchoolAdminClient />;
+  return <SchoolAdminClient myEmail={session.email} />;
 }

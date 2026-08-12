@@ -32,6 +32,20 @@ export default function LoginPage() {
 
   // 로그인 성공 후: 브라우저에 있던 문서를 계정으로 옮기고 목록으로 이동
   async function afterSignIn() {
+    // 관리자 화면에서 가입자를 볼 수 있도록 본인 정보를 남긴다.
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("profiles")
+          .upsert({ id: user.id, email: user.email ?? "" }, { onConflict: "id" });
+      }
+    } catch {
+      // 기록 실패는 로그인을 막지 않는다
+    }
     try {
       const moved = await migrateLocalPlansToCloud();
       if (moved > 0) {

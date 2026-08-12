@@ -37,8 +37,14 @@ export default async function AdminPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 제작자(관리자) 이메일이 아니면 접근 차단
-  if (!user || !ADMIN_EMAIL || user.email !== ADMIN_EMAIL) {
+  // 제작자 이메일이거나, 관리자로 임명된 사람만 볼 수 있다.
+  const { getSchoolSession } = await import("@/lib/schoolAuth");
+  const session = await getSchoolSession();
+  const allowed =
+    Boolean(user) &&
+    ((ADMIN_EMAIL && user?.email === ADMIN_EMAIL) || session?.isAdmin);
+
+  if (!allowed) {
     return (
       <div className="min-h-screen bg-slate-50">
         <Nav />
@@ -108,8 +114,11 @@ export default async function AdminPage() {
           {t("admin.title")}
         </h1>
         <p className="mb-6 text-sm text-slate-500">
-          {user.email}
-          {t("admin.onlyYou")}
+          {user?.email}
+          {t("admin.onlyYou")}{" "}
+          <Link href="/school/admin" className="text-emerald-700 underline">
+            가입자 · 권한 관리 →
+          </Link>
         </p>
 
         <div className="mb-6 grid grid-cols-2 gap-4">
