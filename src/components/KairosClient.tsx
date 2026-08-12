@@ -41,7 +41,13 @@ const MODES: [GridMode, string][] = [
 
 type SaveState = "idle" | "saving" | "saved" | "failed";
 
-export default function KairosClient({ isStaff }: { isStaff: boolean }) {
+export default function KairosClient({
+  isStaff,
+  isAdmin,
+}: {
+  isStaff: boolean;
+  isAdmin: boolean;
+}) {
   const { t, lang } = useI18n();
   const [week, setWeek] = useState("");
   const [data, setData] = useState<WeekData | null>(null);
@@ -171,7 +177,11 @@ export default function KairosClient({ isStaff }: { isStaff: boolean }) {
   if (!week || !data) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <SchoolHeader title="내 시간표" showTeacherLink={isStaff} />
+        <SchoolHeader
+        title="내 시간표"
+        showTeacherLink={isStaff}
+        showAdminLink={isAdmin}
+      />
         <main className="mx-auto max-w-6xl px-4 py-10 text-sm text-slate-400">
           {t("kairos.loading")}
         </main>
@@ -193,7 +203,11 @@ export default function KairosClient({ isStaff }: { isStaff: boolean }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <SchoolHeader title="내 시간표" showTeacherLink={isStaff} />
+      <SchoolHeader
+        title="내 시간표"
+        showTeacherLink={isStaff}
+        showAdminLink={isAdmin}
+      />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>

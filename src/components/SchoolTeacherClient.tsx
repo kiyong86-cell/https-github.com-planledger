@@ -66,7 +66,7 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <SchoolHeader title="학생 현황" showAdminLink={isAdmin} />
+      <SchoolHeader title="학생 현황" showKairosLink showAdminLink={isAdmin} />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>

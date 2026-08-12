@@ -62,7 +62,7 @@ export default function SchoolAdminClient() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <SchoolHeader title="승인 관리" showTeacherLink showAdminLink={false} />
+      <SchoolHeader title="승인 관리" showKairosLink showTeacherLink />
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>

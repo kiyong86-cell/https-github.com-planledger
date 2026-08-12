@@ -3,7 +3,6 @@
 import {
   adherence,
   CATS,
-  CatKey,
   DAY_KO,
   DAYS,
   dayDate,
@@ -34,47 +33,23 @@ const cell = (extra = "") =>
 const head = (extra = "") =>
   cell(`background-color:${HEAD_BG};text-align:center;font-weight:bold;${extra}`);
 
-/** 30분 칸을 시간(hh:mm) 문자열로 */
-function slotTime(i: number): string {
-  const h = START_HOUR + Math.floor(i / 2);
-  return `${String(h).padStart(2, "0")}:${i % 2 ? "30" : "00"}`;
-}
-
-/** 연속으로 같은 활동인 칸을 하나의 시간 블록으로 묶는다. */
-function blocks(row: (CatKey | null)[]): string[] {
-  const out: string[] = [];
-  let i = 0;
-  while (i < SLOTS) {
-    const k = row[i];
-    if (!k) {
-      i += 1;
-      continue;
-    }
-    let j = i;
-    while (j < SLOTS && row[j] === k) j += 1;
-    const name = CATS.find((c) => c.key === k)?.ko ?? k;
-    const end = j >= SLOTS ? `${END_HOUR}:00` : slotTime(j);
-    out.push(`${slotTime(i)}~${end} ${name}`);
-    i = j;
-  }
-  return out;
-}
-
 function catTable(
   tot: ReturnType<typeof displayTotals>,
   cmp?: ReturnType<typeof displayTotals>
 ): string {
   let h = `<table style="border-collapse:collapse"><tr><th style="${head(
-    "width:80px"
+    "width:66px"
   )}"></th>`;
   DAYS.forEach((d) => {
-    h += `<th style="${head("width:46px")}">${d}</th>`;
+    h += `<th style="${head("width:32px;font-size:8pt")}">${d}</th>`;
   });
-  h += `<th style="${head("width:46px")}">주계</th></tr>`;
+  h += `<th style="${head("width:34px;font-size:8pt")}">주계</th></tr>`;
 
   CATS.forEach((c) => {
     let wk = 0;
-    h += `<tr><td style="${cell()}">${c.ko}</td>`;
+    h += `<tr><td style="${cell(
+      "white-space:nowrap;font-size:8.5pt"
+    )}">${c.ko}</td>`;
     DAYS.forEach((d) => {
       const v = tot[d][c.key];
       wk += v;
@@ -154,76 +129,63 @@ function legend(): string {
   ).join(" &nbsp; ")}</p>`;
 }
 
-function dayBlock(data: WeekData, week: string, index: number): string {
-  const d = DAYS[index];
-  const day = data.days[d];
-  const adh = adherence(data, d);
-  const filled = day.todos.filter((t) => t.t.trim());
-  const done = filled.filter((t) => t.done).length;
-  const p = sumDay(gridTotals(data, "plan")[d]);
-  const a = sumDay(gridTotals(data, "act")[d]);
+/** 1장 — 주간 학습 계획: 요일 6줄을 한 표에 담는다. */
+function weeklySheet(data: WeekData, week: string): string {
+  let h = `<table style="border-collapse:collapse;width:100%">
+<tr>
+<td style="${head("width:52px")}">요일</td>
+<td style="${head("width:210px")}">묵상 본문 · 액션 포인트 · 감사 제목</td>
+<td style="${head()}">할 일 (√ = 완료)</td>
+<td style="${head("width:96px")}">자가 평가</td>
+<td style="${head("width:150px")}">한 줄 평가</td>
+</tr>`;
 
-  let h = `<p style="font-size:14pt"><strong>일일학습계획표</strong>
-<span style="font-size:10pt">${dayDate(week, index)} (${DAY_KO[d]}요일)</span></p>
-<table style="border-collapse:collapse;width:100%">
-<tr><td style="${head("width:110px")}">오늘의 묵상 본문</td><td style="${cell()}">${
-    esc(day.med) || "&nbsp;"
-  }</td></tr>
-<tr><td style="${head()}">액션 포인트</td><td style="${cell()}">${
-    esc(day.act) || "&nbsp;"
-  }</td></tr>
-<tr><td style="${head()}">감사 제목</td><td style="${cell()}">${
-    esc(day.thx) || "&nbsp;"
-  }</td></tr></table>
-<p style="font-size:11pt"><strong>일일 자가 평가</strong></p>
-<table style="border-collapse:collapse;width:100%">
-<tr><td style="${head("width:110px")}">목표 달성률</td><td style="${cell()}">${
-    adh === null ? "계획 없음" : `${adh} / 100`
-  }</td>
-<td style="${head("width:90px")}">할 일 완료</td><td style="${cell()}">${done} / ${
-    filled.length
-  }</td></tr>
-<tr><td style="${head()}">계획 / 실행 시간</td><td style="${cell()}">${fmt(
-    p
-  )}h / ${fmt(a)}h</td>
-<td style="${head()}">한 줄 평가</td><td style="${cell()}">${
-    esc(day.rev) || "&nbsp;"
-  }</td></tr></table>
-<p style="font-size:11pt"><strong>오늘 할 일</strong></p>
-<table style="border-collapse:collapse;width:100%">
-<tr><td style="${head("width:50px")}">우선순위</td><td style="${head()}">구체적인 학습 내용</td><td style="${head(
-    "width:56px"
-  )}">목표 달성</td></tr>`;
-  day.todos.forEach((t) => {
-    h += `<tr><td style="${cell("text-align:center")}">${
-      esc(t.p) || "&nbsp;"
-    }</td><td style="${cell()}">${esc(t.t) || "&nbsp;"}</td><td style="${cell(
-      "text-align:center"
-    )}">${t.done ? "V" : "&nbsp;"}</td></tr>`;
+  DAYS.forEach((d, index) => {
+    const day = data.days[d];
+    const adh = adherence(data, d);
+    const filled = day.todos.filter((t) => t.t.trim());
+    const done = filled.filter((t) => t.done).length;
+    const p = sumDay(gridTotals(data, "plan")[d]);
+    const a = sumDay(gridTotals(data, "act")[d]);
+
+    const devotion = [
+      day.med.trim() && `묵상: ${esc(day.med)}`,
+      day.act.trim() && `액션: ${esc(day.act)}`,
+      day.thx.trim() && `감사: ${esc(day.thx)}`,
+    ]
+      .filter(Boolean)
+      .join("<br/>");
+
+    const todoList = filled.length
+      ? filled
+          .map(
+            (t) =>
+              `${t.done ? "√" : "·"} ${t.p.trim() ? `[${esc(t.p)}] ` : ""}${esc(
+                t.t
+              )}`
+          )
+          .join("<br/>")
+      : "&nbsp;";
+
+    h += `<tr>
+<td style="${cell("text-align:center;font-size:9pt")}"><strong>${
+      DAY_KO[d]
+    }</strong><br/><span style="font-size:7.5pt">${dayDate(week, index)
+      .split(". ")
+      .slice(1)
+      .join("/")}</span></td>
+<td style="${cell("font-size:9pt")}">${devotion || "&nbsp;"}</td>
+<td style="${cell("font-size:9pt")}">${todoList}</td>
+<td style="${cell("font-size:8.5pt")}">달성률 ${
+      adh === null ? "-" : `${adh}%`
+    }<br/>할 일 ${done}/${filled.length}<br/>계획 ${fmt(p)}h · 실행 ${fmt(
+      a
+    )}h</td>
+<td style="${cell("font-size:9pt")}">${esc(day.rev) || "&nbsp;"}</td>
+</tr>`;
   });
-  h += "</table>";
 
-  const planBlocks = blocks(data.grid.plan[d]);
-  const actBlocks = blocks(data.grid.act[d]);
-  if (planBlocks.length || actBlocks.length) {
-    h += `<p style="font-size:11pt"><strong>시간 사용</strong></p>
-<table style="border-collapse:collapse;width:100%">
-<tr><td style="${head("width:50px")}">계획</td><td style="${cell()}">${
-      planBlocks.join(" / ") || "&nbsp;"
-    }</td></tr>
-<tr><td style="${head()}">실행</td><td style="${cell()}">${
-      actBlocks.join(" / ") || "&nbsp;"
-    }</td></tr></table>`;
-  }
-
-  const tomorrow = day.tmr.filter((t) => t.trim());
-  h += `<p style="font-size:11pt"><strong>내일 할 일</strong></p>`;
-  h += tomorrow.length
-    ? `<p style="font-size:10pt">${tomorrow
-        .map((t) => `• ${esc(t)}`)
-        .join("<br/>")}</p>`
-    : `<p style="font-size:10pt">&nbsp;</p>`;
-  return h;
+  return h + "</table>";
 }
 
 /** 주간 전체 문서(HTML). PDF·Word·한글이 모두 이 결과를 쓴다. */
@@ -235,38 +197,55 @@ export function buildWeekHtml(
   const plan = displayTotals(data, "plan");
   const act = displayTotals(data, "act");
 
-  let body = `<p style="font-size:18pt"><strong>KAIROS 주간 계획표</strong></p>
-<p style="font-size:10pt">${week} (${dayDate(week, 0)} ~ ${dayDate(
-    week,
-    5
-  )})</p>`;
+  const period = `${week} (${dayDate(week, 0)} ~ ${dayDate(week, 5)})`;
+  const title = (text: string) =>
+    `<p style="font-size:15pt;margin:0 0 4pt 0"><strong>${text}</strong>
+<span style="font-size:9pt;font-weight:normal">&nbsp;&nbsp;${period}</span></p>`;
 
-  DAYS.forEach((_, i) => {
-    body += `<div style="page-break-after:always">${dayBlock(
-      data,
-      week,
-      i
-    )}</div>`;
-  });
+  // 1장 — 주간 학습 계획
+  let body = `<div style="page-break-after:always">
+${title("KAIROS 주간 학습 계획")}
+${weeklySheet(data, week)}
+</div>`;
 
+  // 2장 — 24시간 계획·실행
   body += `<div style="page-break-after:always">
-<p style="font-size:14pt"><strong>24시간을 어떻게 사용할 것인가? (계획·실행)</strong></p>
+${title("24시간을 어떻게 사용할 것인가? (계획·실행)")}
 ${legend()}${gridTable(data)}
-<p style="font-size:8.5pt">※ 00~06시 6시간은 잠·휴식으로 자동 계산되어 합계에 포함됩니다.</p></div>
-<p style="font-size:14pt"><strong>시간 분배</strong></p>`;
+<p style="font-size:8.5pt">※ 00~06시 6시간은 잠·휴식으로 자동 계산되어 합계에 포함됩니다.</p>
+</div>`;
 
+  // 3장 — 시간 분배 (표 세 개를 가로로 나란히)
+  const columns: string[] = [];
   if (prevWeekData) {
-    body += `<p style="font-size:11pt"><strong>지난 주 실행</strong></p>${catTable(
-      displayTotals(prevWeekData, "act")
-    )}`;
+    columns.push(
+      `<p style="font-size:10pt;margin:0 0 3pt 0"><strong>지난 주 실행</strong></p>${catTable(
+        displayTotals(prevWeekData, "act")
+      )}`
+    );
   }
-  body += `<p style="font-size:11pt"><strong>이번 주 계획</strong></p>${catTable(
-    plan
-  )}
-<p style="font-size:11pt"><strong>이번 주 실행 (작은 숫자 = 계획 대비 차이)</strong></p>${catTable(
-    act,
-    plan
-  )}`;
+  columns.push(
+    `<p style="font-size:10pt;margin:0 0 3pt 0"><strong>이번 주 계획</strong></p>${catTable(
+      plan
+    )}`
+  );
+  columns.push(
+    `<p style="font-size:10pt;margin:0 0 3pt 0"><strong>이번 주 실행</strong></p>${catTable(
+      act,
+      plan
+    )}`
+  );
+
+  body += `<div>
+${title("시간 분배")}
+<table style="width:100%"><tr>${columns
+    .map(
+      (c) =>
+        `<td style="vertical-align:top;padding-right:10pt;border:0">${c}</td>`
+    )
+    .join("")}</tr></table>
+<p style="font-size:8.5pt">※ 실행 표의 작은 숫자는 계획 대비 차이입니다. 00~06시 잠·휴식 6시간이 합계에 포함되어 있습니다.</p>
+</div>`;
 
   return `<html><head><meta charset="utf-8"><title>KAIROS ${week}</title>
 <style>body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;font-size:10pt}

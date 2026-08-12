@@ -10,5 +10,7 @@ export default async function KairosPage() {
   if (!session) redirect("/school");
   if (!isApproved(session.role)) redirect("/school");
 
-  return <KairosClient isStaff={isStaff(session.role)} />;
+  return (
+    <KairosClient isStaff={isStaff(session.role)} isAdmin={session.isAdmin} />
+  );
 }
