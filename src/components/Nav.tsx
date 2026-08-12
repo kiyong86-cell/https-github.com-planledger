@@ -29,7 +29,7 @@ export default function Nav() {
     { href: "/", label: t("nav.home") },
     { href: "/business-plan", label: t("nav.plans") },
     { href: "/convert", label: t("nav.convert") },
-    { href: "/school", label: "KAIROS" },
+    { href: "/school", label: "정직이들" },
     { href: "/contact", label: t("nav.contact") },
   ];
 

@@ -237,7 +237,7 @@ export function buildWeekHtml(
 
   // 1장 — 주간 학습 계획
   let body = `<div style="page-break-after:always">
-${title("KAIROS 주간 학습 계획")}
+${title("정직이들 주간 학습 계획")}
 ${weeklySheet(data, week)}
 </div>`;
 
@@ -265,7 +265,7 @@ ${distributionTable(groups)}
 <p style="font-size:8.5pt">※ 실행 칸의 작은 숫자는 계획 대비 차이입니다. 00~06시 잠·휴식 6시간이 합계에 포함되어 있습니다.</p>
 </div>`;
 
-  return `<html><head><meta charset="utf-8"><title>KAIROS ${week}</title>
+  return `<html><head><meta charset="utf-8"><title>정직이들 ${week}</title>
 <style>body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;font-size:10pt}
 @page{size:A4 landscape;margin:12mm}</style></head><body>${body}</body></html>`;
 }
@@ -285,7 +285,7 @@ function download(blob: Blob, filename: string) {
 export function exportWeekToWord(week: string, html: string) {
   download(
     new Blob(["﻿" + html], { type: "application/msword" }),
-    `KAIROS_${week}.doc`
+    `정직이들_${week}.doc`
   );
 }
 
@@ -294,8 +294,8 @@ export async function exportWeekToHwpx(week: string, html: string) {
   const { htmlToHwpx } = await import("hwp-convert");
   const { postProcessHwpx } = await import("./docxToHwpx");
   const raw: Uint8Array = await htmlToHwpx(html, {
-    title: `KAIROS ${week}`,
-    creator: "PlanLedger KAIROS",
+    title: `정직이들 ${week}`,
+    creator: "PlanLedger 정직이들",
   });
 
   // 24시간 표는 열이 39개라 그냥 두면 요일·구분 칸까지 시간칸만큼 좁아진다.
@@ -308,7 +308,7 @@ export async function exportWeekToHwpx(week: string, html: string) {
 
   download(
     new Blob([new Uint8Array(bytes)], { type: "application/hwp+zip" }),
-    `KAIROS_${week}.hwpx`
+    `정직이들_${week}.hwpx`
   );
 }
 

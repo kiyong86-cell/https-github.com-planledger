@@ -12,7 +12,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-slate-50">
       <main className="mx-auto max-w-md px-4 py-14">
         <h1 className="mb-1 text-2xl font-semibold tracking-wide text-slate-900">
-          KAIROS
+          정직이들
         </h1>
         <p className="mb-6 text-sm text-slate-500">
           학교 전용 주간 시간 계획표입니다.
@@ -43,7 +43,7 @@ export default async function SchoolEntryPage() {
         <div className="rounded-lg border bg-white p-6 shadow-sm">
           <p className="text-sm leading-relaxed text-slate-600">
             먼저 본인 이메일로 로그인해주세요. 계정이 없으면 같은 화면에서
-            가입할 수 있습니다. 로그인한 뒤 KAIROS 이용 신청을 하면 관리자가
+            가입할 수 있습니다. 로그인한 뒤 정직이들 이용 신청을 하면 관리자가
             승인해 드립니다.
           </p>
           <Link
@@ -69,7 +69,7 @@ export default async function SchoolEntryPage() {
         <SchoolHeader title="이용 신청" />
         <main className="mx-auto max-w-md px-4 py-10">
           <h1 className="mb-1 text-xl font-semibold text-slate-900">
-            KAIROS 이용 신청
+            정직이들 이용 신청
           </h1>
           <p className="mb-5 text-sm text-slate-500">
             {session.email} 계정으로 신청합니다.

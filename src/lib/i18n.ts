@@ -215,8 +215,8 @@ const ko: Dict = {
   "contact.note": "버튼을 누르면 메일 앱이 열립니다. 직접 위 주소로 보내셔도 됩니다.",
 
   // KAIROS — 주간 시간 계획·실행
-  "nav.kairos": "KAIROS 시간표",
-  "kairos.title": "KAIROS — 주간 시간 계획·실행",
+  "nav.kairos": "정직이들",
+  "kairos.title": "정직이들 — 주간 시간 계획·실행",
   "kairos.intro": "요일마다 계획과 실행을 한 표에 칠하면, 항목별 시간과 목표 달성률이 자동으로 계산됩니다.",
   "kairos.loading": "불러오는 중...",
   "kairos.tab1": "1. 일일학습계획표",
@@ -260,7 +260,7 @@ const ko: Dict = {
   "kairos.exporting": "만드는 중...",
   "kairos.exportFailed": "파일을 만들지 못했습니다. 잠시 후 다시 시도해주세요.",
   "kairos.popupBlocked": "팝업이 차단되었습니다. 주소창 옆에서 팝업을 허용한 뒤 다시 눌러주세요.",
-  "home.card3.title": "KAIROS 시간표",
+  "home.card3.title": "정직이들 시간표",
   "home.card3.body": "24시간을 어떻게 쓸지 요일별로 계획하고, 실제로 쓴 시간을 같은 표에 기록합니다. 항목별 시간과 목표 달성률이 자동으로 계산되고, 주간 계획표는 PDF·Word·한글로 내려받아 제출할 수 있어요.",
   "home.card3.cta": "시간표 써보기",
 
@@ -454,8 +454,8 @@ const en: Dict = {
   "contact.note": "This opens your email app. You can also email the address above directly.",
 
   // KAIROS
-  "nav.kairos": "KAIROS",
-  "kairos.title": "KAIROS — Weekly plan vs. actual",
+  "nav.kairos": "정직이들",
+  "kairos.title": "정직이들 — Weekly plan vs. actual",
   "kairos.intro": "Paint your plan and what you actually did on the same table. Hours per category and your goal rate are calculated automatically.",
   "kairos.loading": "Loading...",
   "kairos.tab1": "1. Daily study sheet",
@@ -499,7 +499,7 @@ const en: Dict = {
   "kairos.exporting": "Building...",
   "kairos.exportFailed": "Could not build the file. Please try again.",
   "kairos.popupBlocked": "The popup was blocked. Allow popups for this site and try again.",
-  "home.card3.title": "KAIROS weekly timetable",
+  "home.card3.title": "정직이들 weekly timetable",
   "home.card3.body": "Plan how you will spend each day's 24 hours, then record what actually happened on the same table. Hours per category and your goal rate are calculated for you, and the weekly sheet exports to PDF, Word, or HWP.",
   "home.card3.cta": "Try the timetable",
 

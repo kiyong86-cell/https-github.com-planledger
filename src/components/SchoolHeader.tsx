@@ -37,7 +37,7 @@ export default function SchoolHeader({
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
         <div className="flex items-center gap-4">
           <Link href="/school" className="font-semibold tracking-wide text-slate-900">
-            KAIROS
+            정직이들
           </Link>
           <span className="text-sm text-slate-400">{title}</span>
         </div>

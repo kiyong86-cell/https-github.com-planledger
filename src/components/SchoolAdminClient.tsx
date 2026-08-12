@@ -24,7 +24,7 @@ type Filter = "pending" | "kairos" | "all";
 
 const FILTERS: [Filter, string][] = [
   ["pending", "승인 대기"],
-  ["kairos", "KAIROS 사용자"],
+  ["kairos", "정직이들 사용자"],
   ["all", "전체 가입자"],
 ];
 
@@ -162,7 +162,7 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
               가입자 · 권한 관리
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              가입한 사람에게 KAIROS 권한을 줍니다. 관리자로 임명하면 이 화면을
+              가입한 사람에게 정직이들 권한을 줍니다. 관리자로 임명하면 이 화면을
               같이 쓸 수 있어요.
             </p>
           </div>
