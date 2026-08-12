@@ -8,7 +8,6 @@ import LangToggle from "./LangToggle";
 import { getCurrentUser } from "@/lib/planStore";
 
 const CLOUD_ENABLED = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
 export default function Nav() {
   const pathname = usePathname();
@@ -16,7 +15,6 @@ export default function Nav() {
   const { t } = useI18n();
   const [email, setEmail] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
-  const [kairosOk, setKairosOk] = useState(false);
 
   useEffect(() => {
     getCurrentUser()
@@ -25,45 +23,13 @@ export default function Nav() {
       .finally(() => setChecked(true));
   }, [pathname]);
 
-  // KAIROS는 승인받은 사람에게만 메뉴에 보인다.
-  useEffect(() => {
-    if (!CLOUD_ENABLED) return;
-    let alive = true;
-    (async () => {
-      const user = await getCurrentUser();
-      if (!user) {
-        if (alive) setKairosOk(false);
-        return;
-      }
-      // 관리자(제작자)는 신청 기록이 없어도 항상 보인다.
-      if (
-        ADMIN_EMAIL &&
-        user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
-      ) {
-        if (alive) setKairosOk(true);
-        return;
-      }
-      const { createClient } = await import("@/lib/supabase/client");
-      const { data } = await createClient()
-        .from("kairos_members")
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const role = data?.role as string | undefined;
-      if (alive) setKairosOk(role === "student" || role === "teacher" || role === "admin");
-    })().catch(() => {
-      if (alive) setKairosOk(false);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [pathname]);
-
+  // KAIROS는 누구에게나 메뉴에 보인다.
+  // (실제 사용은 로그인 + 관리자 승인이 있어야 하며, /school 에서 안내한다)
   const links = [
     { href: "/", label: t("nav.home") },
     { href: "/business-plan", label: t("nav.plans") },
     { href: "/convert", label: t("nav.convert") },
-    ...(kairosOk ? [{ href: "/school", label: "KAIROS" }] : []),
+    { href: "/school", label: "KAIROS" },
     { href: "/contact", label: t("nav.contact") },
   ];
 

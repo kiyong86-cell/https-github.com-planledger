@@ -1,4 +1,4 @@
-import { applyColumnWidths } from "./docxToHwpx";
+import { postProcessHwpx } from "./docxToHwpx";
 import { BusinessPlanContent, formatMoney, PlanImage } from "./types";
 
 const IMG_PREFIX = "app-image://";
@@ -245,7 +245,7 @@ ${imagesSection}
 </body></html>`;
 
   const { htmlToHwpx } = await import("hwp-convert");
-  let bytes: Uint8Array = await htmlToHwpx(html, {
+  const raw: Uint8Array = await htmlToHwpx(html, {
     title: title || "기획안",
     creator: "기획안 관리",
     imageResolver: resolver,
@@ -261,24 +261,7 @@ ${imagesSection}
   }
   if (content.budget?.items?.length) grids.push(BUDGET_COLS);
 
-  if (grids.length > 0) {
-    try {
-      const JSZip = (await import("jszip")).default;
-      const zip = await JSZip.loadAsync(bytes);
-      const sectionFile = zip.file("Contents/section0.xml");
-      if (sectionFile) {
-        const sectionXml = await sectionFile.async("string");
-        zip.file("Contents/section0.xml", applyColumnWidths(sectionXml, grids));
-        zip.file("mimetype", "application/hwp+zip", { compression: "STORE" });
-        bytes = await zip.generateAsync({
-          type: "uint8array",
-          compression: "DEFLATE",
-        });
-      }
-    } catch {
-      // 폭 조정에 실패해도 균등 분할본을 그대로 내보낸다
-    }
-  }
+  const bytes = await postProcessHwpx(raw, { grids });
 
   const blob = new Blob([new Uint8Array(bytes)], {
     type: "application/hwp+zip",

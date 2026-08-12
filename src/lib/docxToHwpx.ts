@@ -195,6 +195,31 @@ export function extractTableGrids(docXml: string): number[][] {
 
 // 변환된 HWPX의 section XML에서 각 표의 셀 너비를
 // 원본 docx의 열 너비 비율대로 재조정한다.
+function resizeTable(tbl: string, grid: number[]): string | null {
+  if (!grid || grid.length < 2) return null; // 열 1개면 조정 불필요
+
+  const colCnt = Number(tbl.match(/colCnt="(\d+)"/)?.[1] ?? 0);
+  if (colCnt !== grid.length) return null; // 구조 불일치 시 건드리지 않음
+
+  const total = Number(tbl.match(/<hp:sz width="(\d+)"/)?.[1] ?? 0);
+  if (!total) return null;
+
+  const gridSum = grid.reduce((a, b) => a + b, 0);
+  const colW = grid.map((w) => Math.round((w / gridSum) * total));
+  colW[colW.length - 1] = total - colW.slice(0, -1).reduce((a, b) => a + b, 0);
+
+  return tbl.replace(
+    /(<hp:cellAddr colAddr="(\d+)"[^>]*\/>\s*<hp:cellSpan colSpan="(\d+)"[^>]*\/>\s*<hp:cellSz width=")(\d+)(")/g,
+    (_m, pre, colAddr, colSpan, _oldW, post) => {
+      const c = Number(colAddr);
+      const span = Number(colSpan);
+      let w = 0;
+      for (let k = c; k < Math.min(c + span, colW.length); k++) w += colW[k];
+      return `${pre}${w}${post}`;
+    }
+  );
+}
+
 export function applyColumnWidths(
   sectionXml: string,
   grids: number[][]
@@ -203,33 +228,91 @@ export function applyColumnWidths(
   let out = sectionXml;
 
   tables.forEach((tbl, ti) => {
-    const grid = grids[ti];
-    if (!grid || grid.length < 2) return; // 열 1개면 조정 불필요
-
-    const colCnt = Number(tbl.match(/colCnt="(\d+)"/)?.[1] ?? 0);
-    if (colCnt !== grid.length) return; // 구조 불일치 시 건드리지 않음
-
-    const total = Number(tbl.match(/<hp:sz width="(\d+)"/)?.[1] ?? 0);
-    if (!total) return;
-
-    const gridSum = grid.reduce((a, b) => a + b, 0);
-    const colW = grid.map((w) => Math.round((w / gridSum) * total));
-    colW[colW.length - 1] = total - colW.slice(0, -1).reduce((a, b) => a + b, 0);
-
-    const updated = tbl.replace(
-      /(<hp:cellAddr colAddr="(\d+)"[^>]*\/>\s*<hp:cellSpan colSpan="(\d+)"[^>]*\/>\s*<hp:cellSz width=")(\d+)(")/g,
-      (_m, pre, colAddr, colSpan, _oldW, post) => {
-        const c = Number(colAddr);
-        const span = Number(colSpan);
-        let w = 0;
-        for (let k = c; k < Math.min(c + span, colW.length); k++) w += colW[k];
-        return `${pre}${w}${post}`;
-      }
-    );
-    out = out.replace(tbl, updated);
+    const updated = resizeTable(tbl, grids[ti]);
+    if (updated) out = out.replace(tbl, updated);
   });
 
   return out;
+}
+
+/** 문서 순서 대신 "열 개수"로 표를 찾아 너비를 지정한다. */
+export function applyColumnWidthsByColCount(
+  sectionXml: string,
+  map: Record<number, number[]>
+): string {
+  const tables = scanBlocks(sectionXml, "<hp:tbl ", "</hp:tbl>");
+  let out = sectionXml;
+
+  tables.forEach((tbl) => {
+    const colCnt = Number(tbl.match(/colCnt="(\d+)"/)?.[1] ?? 0);
+    const updated = resizeTable(tbl, map[colCnt]);
+    if (updated) out = out.replace(tbl, updated);
+  });
+
+  return out;
+}
+
+// 변환 엔진은 정렬을 지정하지 않은 문단을 모두 "양쪽 정렬(JUSTIFY)"로 만든다.
+// Word의 기본값은 왼쪽 정렬이라 글자 간격이 벌어져 원본과 달라 보인다.
+// 그래서 기본 문단 모양(paraPr id="0")만 왼쪽 정렬로 바꾼다.
+export function setDefaultAlignLeft(headerXml: string): string {
+  return headerXml.replace(
+    /(<hh:paraPr id="0"[\s\S]*?<hh:align horizontal=")JUSTIFY(")/,
+    "$1LEFT$2"
+  );
+}
+
+// 용지를 가로로 눕힌다 (열이 많은 표가 잘리지 않도록).
+export function setPageLandscape(sectionXml: string): string {
+  return sectionXml.replace(
+    /<hp:pagePr([^>]*?)width="(\d+)"([^>]*?)height="(\d+)"/,
+    (m, a, w, b, h) =>
+      Number(w) < Number(h)
+        ? `<hp:pagePr${a}width="${h}"${b}height="${w}"`
+        : m
+  );
+}
+
+/** 변환 결과 HWPX를 열어 보정한 뒤 다시 묶는다. */
+export async function postProcessHwpx(
+  bytes: Uint8Array,
+  options: {
+    grids?: number[][];
+    gridByCols?: Record<number, number[]>;
+    landscape?: boolean;
+  } = {}
+): Promise<Uint8Array> {
+  const { grids, gridByCols, landscape } = options;
+  try {
+    const JSZip = (await import("jszip")).default;
+    const zip = await JSZip.loadAsync(bytes);
+
+    const headerFile = zip.file("Contents/header.xml");
+    if (headerFile) {
+      zip.file(
+        "Contents/header.xml",
+        setDefaultAlignLeft(await headerFile.async("string"))
+      );
+    }
+
+    const sectionFile = zip.file("Contents/section0.xml");
+    if (sectionFile) {
+      let section = await sectionFile.async("string");
+      if (grids && grids.some((g) => g.length > 1)) {
+        section = applyColumnWidths(section, grids);
+      }
+      if (gridByCols) section = applyColumnWidthsByColCount(section, gridByCols);
+      if (landscape) section = setPageLandscape(section);
+      zip.file("Contents/section0.xml", section);
+    }
+
+    // mimetype은 규격상 무압축이어야 한다
+    zip.file("mimetype", "application/hwp+zip", { compression: "STORE" });
+    return await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
+  } catch {
+    // 보정에 실패하면 변환 원본을 그대로 쓴다
+    return bytes;
+  }
 }
 
 // mammoth가 만든 HTML을 hwp-convert에 맞게 보강한다.
@@ -311,32 +394,13 @@ export async function convertDocxToHwpx(
 
   const { htmlToHwpx } = await import("hwp-convert");
   const title = file.name.replace(/\.docx$/i, "");
-  let bytes: Uint8Array = await htmlToHwpx(html, {
+  const raw: Uint8Array = await htmlToHwpx(html, {
     title,
     creator: "PlanLedger",
   });
 
-  // 후처리: 원본 열 너비 비율을 HWPX에 반영
-  if (grids.some((g) => g.length > 1)) {
-    try {
-      const outZip = await JSZip.loadAsync(bytes);
-      const sectionFile = outZip.file("Contents/section0.xml");
-      if (sectionFile) {
-        const sectionXml = await sectionFile.async("string");
-        outZip.file("Contents/section0.xml", applyColumnWidths(sectionXml, grids));
-        // mimetype은 규격상 무압축이어야 함 (원래 상태 유지)
-        outZip.file("mimetype", "application/hwp+zip", {
-          compression: "STORE",
-        });
-        bytes = await outZip.generateAsync({
-          type: "uint8array",
-          compression: "DEFLATE",
-        });
-      }
-    } catch {
-      // 폭 조정 실패 시 균등 분할본 그대로 사용
-    }
-  }
+  // 후처리: 원본 열 너비 비율 반영 + 기본 문단 왼쪽 정렬
+  const bytes = await postProcessHwpx(raw, { grids });
 
   return {
     blob: new Blob([new Uint8Array(bytes)], { type: "application/hwp+zip" }),

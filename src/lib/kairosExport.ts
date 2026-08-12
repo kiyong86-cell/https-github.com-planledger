@@ -33,50 +33,83 @@ const cell = (extra = "") =>
 const head = (extra = "") =>
   cell(`background-color:${HEAD_BG};text-align:center;font-weight:bold;${extra}`);
 
-function catTable(
-  tot: ReturnType<typeof displayTotals>,
-  cmp?: ReturnType<typeof displayTotals>
-): string {
-  let h = `<table style="border-collapse:collapse"><tr><th style="${head(
-    "width:66px"
-  )}"></th>`;
-  DAYS.forEach((d) => {
-    h += `<th style="${head("width:32px;font-size:8pt")}">${d}</th>`;
-  });
-  h += `<th style="${head("width:34px;font-size:8pt")}">주계</th></tr>`;
+type DistGroup = {
+  title: string;
+  totals: ReturnType<typeof displayTotals>;
+  compare?: ReturnType<typeof displayTotals>;
+};
 
-  CATS.forEach((c) => {
-    let wk = 0;
-    h += `<tr><td style="${cell(
-      "white-space:nowrap;font-size:8.5pt"
-    )}">${c.ko}</td>`;
+// 시간 분배 표. 한글(hwpx) 변환 엔진이 "표 안의 표"를 풀어버리므로
+// 여러 표를 나란히 놓지 않고 하나의 표로 이어 붙인다.
+function distributionTable(groups: DistGroup[]): string {
+  const COLS = DAYS.length + 2; // 항목 + 요일들 + 주계
+
+  // 1행: 그룹 제목
+  let h = `<table style="border-collapse:collapse;width:100%"><tr>`;
+  groups.forEach((g) => {
+    h += `<td colspan="${COLS}" style="${head("font-size:9.5pt")}">${
+      g.title
+    }</td>`;
+  });
+  h += "</tr><tr>";
+
+  // 2행: 요일 머리글
+  groups.forEach(() => {
+    h += `<td style="${head("width:58px;font-size:8pt")}">항목</td>`;
     DAYS.forEach((d) => {
-      const v = tot[d][c.key];
-      wk += v;
-      let text = v ? fmt(v) : "";
-      if (cmp) {
-        const diff = v - cmp[d][c.key];
-        if (diff)
-          text += ` <span style="font-size:7.5pt;color:${
-            diff > 0 ? "#0d9488" : "#c0392b"
-          }">${diff > 0 ? "+" : ""}${fmt(diff)}</span>`;
-      }
-      h += `<td style="${cell("text-align:center")}">${text || "&nbsp;"}</td>`;
+      h += `<td style="${head("width:26px;font-size:8pt")}">${d}</td>`;
     });
-    h += `<td style="${cell("text-align:center")}">${
-      wk ? fmt(wk) : "&nbsp;"
-    }</td></tr>`;
+    h += `<td style="${head("width:28px;font-size:8pt")}">주계</td>`;
+  });
+  h += "</tr>";
+
+  // 항목별 행
+  CATS.forEach((c) => {
+    h += "<tr>";
+    groups.forEach(({ totals, compare }) => {
+      let wk = 0;
+      h += `<td style="${cell(
+        "white-space:nowrap;font-size:8.5pt"
+      )}">${c.ko}</td>`;
+      DAYS.forEach((d) => {
+        const v = totals[d][c.key];
+        wk += v;
+        let text = v ? fmt(v) : "";
+        if (compare) {
+          const diff = v - compare[d][c.key];
+          if (diff)
+            text += ` <span style="font-size:7pt;color:${
+              diff > 0 ? "#0d9488" : "#c0392b"
+            }">${diff > 0 ? "+" : ""}${fmt(diff)}</span>`;
+        }
+        h += `<td style="${cell(
+          "text-align:center;font-size:8.5pt"
+        )}">${text || "&nbsp;"}</td>`;
+      });
+      h += `<td style="${cell("text-align:center;font-size:8.5pt")}">${
+        wk ? fmt(wk) : "&nbsp;"
+      }</td>`;
+    });
+    h += "</tr>";
   });
 
-  let grand = 0;
-  h += `<tr><td style="${head("text-align:left")}">합계</td>`;
-  DAYS.forEach((d) => {
-    const s = sumDay(tot[d]);
-    grand += s;
-    const off = s !== 24 && s !== NIGHT_REST;
-    h += `<td style="${head(off ? "color:#c0392b" : "")}">${fmt(s)}</td>`;
+  // 합계 행
+  h += "<tr>";
+  groups.forEach(({ totals }) => {
+    let grand = 0;
+    h += `<td style="${head("text-align:left;font-size:8.5pt")}">합계</td>`;
+    DAYS.forEach((d) => {
+      const s = sumDay(totals[d]);
+      grand += s;
+      const off = s !== 24 && s !== NIGHT_REST;
+      h += `<td style="${head(
+        `font-size:8.5pt;${off ? "color:#c0392b" : ""}`
+      )}">${fmt(s)}</td>`;
+    });
+    h += `<td style="${head("font-size:8.5pt")}">${fmt(grand)}</td>`;
   });
-  h += `<td style="${head()}">${fmt(grand)}</td></tr></table>`;
+  h += "</tr></table>";
+
   return h;
 }
 
@@ -215,36 +248,21 @@ ${legend()}${gridTable(data)}
 <p style="font-size:8.5pt">※ 00~06시 6시간은 잠·휴식으로 자동 계산되어 합계에 포함됩니다.</p>
 </div>`;
 
-  // 3장 — 시간 분배 (표 세 개를 가로로 나란히)
-  const columns: string[] = [];
+  // 3장 — 시간 분배 (한 표에 나란히)
+  const groups: DistGroup[] = [];
   if (prevWeekData) {
-    columns.push(
-      `<p style="font-size:10pt;margin:0 0 3pt 0"><strong>지난 주 실행</strong></p>${catTable(
-        displayTotals(prevWeekData, "act")
-      )}`
-    );
+    groups.push({
+      title: "지난 주 실행",
+      totals: displayTotals(prevWeekData, "act"),
+    });
   }
-  columns.push(
-    `<p style="font-size:10pt;margin:0 0 3pt 0"><strong>이번 주 계획</strong></p>${catTable(
-      plan
-    )}`
-  );
-  columns.push(
-    `<p style="font-size:10pt;margin:0 0 3pt 0"><strong>이번 주 실행</strong></p>${catTable(
-      act,
-      plan
-    )}`
-  );
+  groups.push({ title: "이번 주 계획", totals: plan });
+  groups.push({ title: "이번 주 실행", totals: act, compare: plan });
 
   body += `<div>
 ${title("시간 분배")}
-<table style="width:100%"><tr>${columns
-    .map(
-      (c) =>
-        `<td style="vertical-align:top;padding-right:10pt;border:0">${c}</td>`
-    )
-    .join("")}</tr></table>
-<p style="font-size:8.5pt">※ 실행 표의 작은 숫자는 계획 대비 차이입니다. 00~06시 잠·휴식 6시간이 합계에 포함되어 있습니다.</p>
+${distributionTable(groups)}
+<p style="font-size:8.5pt">※ 실행 칸의 작은 숫자는 계획 대비 차이입니다. 00~06시 잠·휴식 6시간이 합계에 포함되어 있습니다.</p>
 </div>`;
 
   return `<html><head><meta charset="utf-8"><title>KAIROS ${week}</title>
@@ -274,10 +292,20 @@ export function exportWeekToWord(week: string, html: string) {
 /** 한글 문서(.hwpx) — 기획안 내보내기와 같은 변환 엔진을 쓴다. */
 export async function exportWeekToHwpx(week: string, html: string) {
   const { htmlToHwpx } = await import("hwp-convert");
-  const bytes: Uint8Array = await htmlToHwpx(html, {
+  const { postProcessHwpx } = await import("./docxToHwpx");
+  const raw: Uint8Array = await htmlToHwpx(html, {
     title: `KAIROS ${week}`,
     creator: "PlanLedger KAIROS",
   });
+
+  // 24시간 표는 열이 39개라 그냥 두면 요일·구분 칸까지 시간칸만큼 좁아진다.
+  // 요일·구분·합계는 넓게, 30분 칸은 좁게 비율을 지정한다.
+  const gridCols = [3, 3, ...Array<number>(SLOTS).fill(1), 3];
+  const bytes = await postProcessHwpx(raw, {
+    gridByCols: { [gridCols.length]: gridCols },
+    landscape: true, // 가로 용지 — 표가 잘리지 않도록
+  });
+
   download(
     new Blob([new Uint8Array(bytes)], { type: "application/hwp+zip" }),
     `KAIROS_${week}.hwpx`
