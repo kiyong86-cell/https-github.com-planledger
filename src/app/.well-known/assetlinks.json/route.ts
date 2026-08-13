@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const PACKAGE_NAME =
-  process.env.ANDROID_PACKAGE_NAME || "kr.co.planledger.jeongjik";
+  process.env.ANDROID_PACKAGE_NAME || "kr.co.planledger.app";
 
 export async function GET() {
   const fingerprints = (process.env.ANDROID_FINGERPRINTS || "")
