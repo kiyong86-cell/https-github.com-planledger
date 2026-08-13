@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import InstallAppButton from "@/components/InstallAppButton";
 import SchoolApply from "@/components/SchoolApply";
 import SchoolHeader from "@/components/SchoolHeader";
 import { getSchoolSession } from "@/lib/schoolAuth";
@@ -52,6 +53,7 @@ export default async function SchoolEntryPage() {
           >
             로그인 · 가입하러 가기
           </Link>
+          <InstallAppButton />
         </div>
       </Shell>
     );
@@ -112,6 +114,7 @@ export default async function SchoolEntryPage() {
               <dd className="text-slate-900">{session.email}</dd>
             </div>
           </dl>
+          <InstallAppButton />
         </div>
       </main>
     </div>
