@@ -58,14 +58,14 @@ export default function SchoolAdminClient({ myEmail }: { myEmail: string }) {
 
     if (members.error) {
       setError(
-        "명단을 불러오지 못했습니다. Supabase에서 kairos.sql이 실행됐는지 확인해주세요."
+        "명단을 불러오지 못했습니다. Supabase에서 setup_all.sql이 실행됐는지 확인해주세요."
       );
       setPeople([]);
       return;
     }
     setError(
       profiles.error
-        ? "가입자 목록은 아직 보이지 않습니다. supabase/kairos_admin.sql을 한 번 실행해주세요."
+        ? "가입자 목록은 아직 보이지 않습니다. supabase/setup_all.sql을 한 번 실행해주세요."
         : null
     );
 

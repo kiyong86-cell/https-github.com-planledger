@@ -59,7 +59,7 @@ export default function SchoolApply({
         /kairos_members/.test(error.message ?? "");
       setError(
         missingTable
-          ? "아직 준비가 끝나지 않았습니다. 관리자가 Supabase에서 kairos.sql을 실행해야 신청할 수 있어요."
+          ? "아직 준비가 끝나지 않았습니다. 관리자가 Supabase에서 setup_all.sql을 실행해야 신청할 수 있어요."
           : `신청을 보내지 못했습니다. (${error.message})`
       );
       setSending(false);
