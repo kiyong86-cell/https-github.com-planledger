@@ -80,6 +80,17 @@ export async function saveWeek(week: string, data: WeekData): Promise<void> {
   );
 }
 
+/** 브라우저에 저장된 주간 기록 전체 (로그인 전에 쓴 것) */
+export async function listLocalWeeks(): Promise<
+  { week: string; data: WeekData; updated_at: string }[]
+> {
+  try {
+    return await tx<Row[]>("readonly", (s) => s.getAll());
+  } catch {
+    return [];
+  }
+}
+
 /** 로그인할 때 브라우저에 있던 주간 데이터를 계정으로 옮긴다. */
 export async function migrateLocalWeeksToCloud(): Promise<number> {
   const user = await getCurrentUser();

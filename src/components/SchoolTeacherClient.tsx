@@ -2,6 +2,7 @@
 
 // 교사 화면 — 승인된 학생들의 주간 제출 현황.
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import SchoolHeader from "@/components/SchoolHeader";
 import { createClient } from "@/lib/supabase/client";
 import { KairosMember } from "@/lib/school";
@@ -177,8 +178,15 @@ export default function SchoolTeacherClient({
 
                   return (
                     <tr key={r.user_id} className="border-b last:border-0">
-                      <td className="px-3 py-2 font-medium text-slate-900">
-                        {r.name || r.email}
+                      <td className="px-3 py-2 font-medium">
+                        <Link
+                          href={`/school/teacher/${r.user_id}?name=${encodeURIComponent(
+                            r.name || r.email
+                          )}`}
+                          className="text-slate-900 underline decoration-slate-300 underline-offset-2 hover:decoration-slate-900"
+                        >
+                          {r.name || r.email}
+                        </Link>
                       </td>
                       <td className="px-3 py-2 text-center text-slate-500">
                         {[r.grade, r.klass].filter(Boolean).join("-") || "-"}

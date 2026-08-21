@@ -8,11 +8,13 @@ import { createClient } from "@/lib/supabase/client";
 export default function SchoolHeader({
   title,
   showKairosLink = false,
+  showRecordsLink = true,
   showTeacherLink = false,
   showAdminLink = false,
 }: {
   title: string;
   showKairosLink?: boolean;
+  showRecordsLink?: boolean;
   showTeacherLink?: boolean;
   showAdminLink?: boolean;
 }) {
@@ -45,6 +47,11 @@ export default function SchoolHeader({
           {showKairosLink && (
             <Link href="/school/kairos" className="hover:text-slate-900">
               내 시간표
+            </Link>
+          )}
+          {showRecordsLink && (
+            <Link href="/school/records" className="hover:text-slate-900">
+              내 기록
             </Link>
           )}
           {showTeacherLink && (

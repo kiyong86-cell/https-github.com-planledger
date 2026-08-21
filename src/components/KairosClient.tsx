@@ -70,7 +70,8 @@ export default function KairosClient({
   );
 
   useEffect(() => {
-    setWeek(currentWeekValue());
+    const fromUrl = new URLSearchParams(window.location.search).get("week");
+    setWeek(fromUrl && /^\d{4}-W\d{2}$/.test(fromUrl) ? fromUrl : currentWeekValue());
   }, []);
 
   // 주가 바뀌면 그 주와 지난 주 데이터를 불러온다.
