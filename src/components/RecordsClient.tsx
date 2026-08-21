@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import SchoolHeader from "@/components/SchoolHeader";
+import WeekGridView from "@/components/WeekGridView";
 import { listWeekRecords, WeekRecord } from "@/lib/kairosRecords";
 import { Feedback, loadFeedback, saveFeedback } from "@/lib/kairosFeedback";
 import {
@@ -163,79 +164,58 @@ export default function RecordsClient({
 
                   {open && (
                     <div className="border-t px-4 py-4">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <h3 className="text-sm font-semibold text-slate-900">
-                            요일별 실행 시간
-                          </h3>
-                          <table className="mt-2 w-full border-collapse text-xs">
-                            <tbody>
-                              {DAYS.map((d) => {
-                                const dayTotal = Object.values(act[d]).reduce(
-                                  (a, b) => a + b,
-                                  0
-                                );
-                                return (
-                                  <tr key={d}>
-                                    <td className="border px-2 py-1">
-                                      {DAY_KO[d]}
-                                    </td>
-                                    <td className="border px-2 py-1 text-right">
-                                      {fmt(dayTotal)}h
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        24시간 계획·실행
+                      </h3>
+                      <div className="mt-2">
+                        <WeekGridView data={r.data} />
+                      </div>
 
-                        <div>
-                          <h3 className="text-sm font-semibold text-slate-900">
-                            과목별 완성 분량
-                          </h3>
-                          {usedSubjects.length === 0 ? (
-                            <p className="mt-2 text-xs text-slate-400">
-                              기록된 과목이 없습니다.
-                            </p>
-                          ) : (
-                            <ul className="mt-2 space-y-1 text-xs text-slate-600">
-                              {usedSubjects.map((c) => {
-                                const notes = DAYS.map((d) => {
-                                  const text = r.data.progress[c.key]?.[d];
-                                  return text ? DAY_KO[d] + " " + text : null;
-                                }).filter(Boolean);
-                                return (
-                                  <li key={c.key}>
-                                    <span
-                                      className="mr-1.5 inline-block h-2.5 w-2.5 rounded-sm align-middle"
-                                      style={{ background: c.color }}
-                                    />
-                                    <b>{c.ko}</b>{" "}
-                                    <span className="text-slate-400">
-                                      (계획{" "}
-                                      {fmt(
-                                        DAYS.reduce(
-                                          (sum, d) => sum + plan[d][c.key],
-                                          0
-                                        )
-                                      )}
-                                      h · 실행{" "}
-                                      {fmt(
-                                        DAYS.reduce(
-                                          (sum, d) => sum + act[d][c.key],
-                                          0
-                                        )
-                                      )}
-                                      h)
-                                    </span>{" "}
-                                    {notes.length ? notes.join(" / ") : "—"}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
-                        </div>
+                      <div className="mt-4">
+                        <h3 className="text-sm font-semibold text-slate-900">
+                          과목별 완성 분량
+                        </h3>
+                        {usedSubjects.length === 0 ? (
+                          <p className="mt-2 text-xs text-slate-400">
+                            기록된 과목이 없습니다.
+                          </p>
+                        ) : (
+                          <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                            {usedSubjects.map((c) => {
+                              const notes = DAYS.map((d) => {
+                                const text = r.data.progress[c.key]?.[d];
+                                return text ? DAY_KO[d] + " " + text : null;
+                              }).filter(Boolean);
+                              return (
+                                <li key={c.key}>
+                                  <span
+                                    className="mr-1.5 inline-block h-2.5 w-2.5 rounded-sm align-middle"
+                                    style={{ background: c.color }}
+                                  />
+                                  <b>{c.ko}</b>{" "}
+                                  <span className="text-slate-400">
+                                    (계획{" "}
+                                    {fmt(
+                                      DAYS.reduce(
+                                        (sum, d) => sum + plan[d][c.key],
+                                        0
+                                      )
+                                    )}
+                                    h · 실행{" "}
+                                    {fmt(
+                                      DAYS.reduce(
+                                        (sum, d) => sum + act[d][c.key],
+                                        0
+                                      )
+                                    )}
+                                    h)
+                                  </span>{" "}
+                                  {notes.length ? notes.join(" / ") : "—"}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
                       </div>
 
                       <div className="mt-4 border-t pt-4">
