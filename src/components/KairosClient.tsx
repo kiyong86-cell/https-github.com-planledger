@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import SchoolHeader from "@/components/SchoolHeader";
 import { useI18n } from "@/components/LangProvider";
 import { loadWeek, saveWeek } from "@/lib/kairosStore";
+import { Feedback, loadMyFeedback } from "@/lib/kairosFeedback";
 import {
   adherence,
   blankWeek,
@@ -54,6 +55,7 @@ export default function KairosClient({
   const [week, setWeek] = useState("");
   const [data, setData] = useState<WeekData | null>(null);
   const [prevData, setPrevData] = useState<WeekData | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [day, setDay] = useState<DayKey>("MON");
   const [tab, setTab] = useState<1 | 2 | 3>(1);
   const [brush, setBrush] = useState<CatKey | null>("study");
@@ -77,6 +79,13 @@ export default function KairosClient({
     let alive = true;
     dirty.current = false;
     setData(null);
+    loadMyFeedback(week)
+      .then((f) => {
+        if (alive) setFeedback(f);
+      })
+      .catch(() => {
+        if (alive) setFeedback(null);
+      });
     Promise.all([loadWeek(week), loadWeek(shiftWeek(week, -1))])
       .then(([cur, prev]) => {
         if (!alive) return;
@@ -213,6 +222,9 @@ export default function KairosClient({
   const todoRate = filledTodos.length
     ? Math.round((doneTodos / filledTodos.length) * 100)
     : 0;
+  const usedSubjects = SUBJECT_CATS.filter((c) =>
+    DAYS.some((d) => planTotals[d][c.key] > 0 || actTotals[d][c.key] > 0)
+  );
   const planHours = sumDay(gridTotals(data, "plan")[day]);
   const actHours = sumDay(gridTotals(data, "act")[day]);
 
@@ -311,6 +323,18 @@ export default function KairosClient({
               : ""}
           </span>
         </div>
+
+        {feedback?.text && (
+          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-sm font-semibold text-emerald-900">
+              선생님 피드백
+              {feedback.teacher_name ? ` — ${feedback.teacher_name} 선생님` : ""}
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-emerald-900">
+              {feedback.text}
+            </p>
+          </div>
+        )}
 
         {/* 1. 일일학습계획표 */}
         {tab === 1 && (
@@ -672,6 +696,82 @@ export default function KairosClient({
               </table>
             </div>
             <p className="mt-3 text-xs text-slate-400">{t("kairos.nightNote")}</p>
+
+            <h3 className="mt-8 border-t pt-6 text-base font-semibold text-slate-900">
+              과목별 완성 분량
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              위 표에서 칠한 과목이 여기에 나타납니다. 요일마다 어디까지 했는지
+              적어주세요. (예: 익힘책 32~40쪽)
+            </p>
+
+            {usedSubjects.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-400">
+                위 표에서 과목을 칠하면 여기에 나타납니다.
+              </p>
+            ) : (
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 text-xs text-slate-500">
+                      <th className="w-28 border px-2 py-1 text-left">과목</th>
+                      <th className="w-16 border px-1 py-1">주간 시간</th>
+                      {DAYS.map((d) => (
+                        <th key={d} className="border px-1 py-1">
+                          {DAY_KO[d]}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usedSubjects.map((c) => {
+                      const hours = DAYS.reduce(
+                        (sum, d) => sum + actTotals[d][c.key],
+                        0
+                      );
+                      return (
+                        <tr key={c.key}>
+                          <td className="border px-2 py-1">
+                            <span className="mr-1.5 inline-block h-3 w-3 rounded-sm align-middle"
+                              style={{ background: c.color }}
+                            />
+                            {catName(c)}
+                          </td>
+                          <td className="border px-1 py-1 text-center text-xs text-slate-400">
+                            {fmt(hours)}h
+                          </td>
+                          {DAYS.map((d) => (
+                            <td key={d} className="border p-0">
+                              <input
+                                value={data.progress[c.key]?.[d] ?? ""}
+                                onChange={(e) =>
+                                  edit((prev) => ({
+                                    ...prev,
+                                    progress: {
+                                      ...prev.progress,
+                                      [c.key]: {
+                                        ...prev.progress[c.key],
+                                        [d]: e.target.value,
+                                      },
+                                    },
+                                  }))
+                                }
+                                placeholder={
+                                  actTotals[d][c.key] || planTotals[d][c.key]
+                                    ? "어디까지"
+                                    : ""
+                                }
+                                className="w-full px-1 py-1.5 text-sm outline-none focus:bg-sky-50"
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
         )}
 
@@ -703,65 +803,6 @@ export default function KairosClient({
             </div>
             <p className="mt-4 text-xs text-slate-400">{t("kairos.distNote")}</p>
 
-            <h3 className="mt-8 text-base font-semibold text-slate-900">
-              과목별 완성 분량
-            </h3>
-            <p className="mt-1 text-sm text-slate-500">
-              이번 주에 어디까지 했는지 적어두세요. 시간은 위에서 자동으로
-              계산되고, 분량은 직접 적습니다. (예: 수학 익힘책 32~48쪽)
-            </p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {SUBJECT_CATS.filter((c) =>
-                DAYS.some(
-                  (d) => planTotals[d][c.key] > 0 || actTotals[d][c.key] > 0
-                )
-              ).map((c) => {
-                const hours = DAYS.reduce(
-                  (sum, d) => sum + actTotals[d][c.key],
-                  0
-                );
-                return (
-                  <label
-                    key={c.key}
-                    className="flex items-center gap-2 rounded-md border bg-slate-50 px-2 py-1.5"
-                  >
-                    <span
-                      className="h-3 w-3 shrink-0 rounded-sm"
-                      style={{ background: c.color }}
-                    />
-                    <span className="w-20 shrink-0 text-sm text-slate-700">
-                      {catName(c)}
-                    </span>
-                    <span className="w-12 shrink-0 text-right text-xs text-slate-400">
-                      {fmt(hours)}h
-                    </span>
-                    <input
-                      value={data.progress[c.key] ?? ""}
-                      onChange={(e) =>
-                        edit((prev) => ({
-                          ...prev,
-                          progress: {
-                            ...prev.progress,
-                            [c.key]: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder="어디까지 했나요?"
-                      className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-sm outline-none focus:bg-white"
-                    />
-                  </label>
-                );
-              })}
-              {SUBJECT_CATS.every((c) =>
-                DAYS.every(
-                  (d) => !planTotals[d][c.key] && !actTotals[d][c.key]
-                )
-              ) && (
-                <p className="text-sm text-slate-400">
-                  2번 표에서 과목을 칠하면 여기에 나타납니다.
-                </p>
-              )}
-            </div>
           </section>
         )}
 

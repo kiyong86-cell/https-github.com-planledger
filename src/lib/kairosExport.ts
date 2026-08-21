@@ -117,7 +117,7 @@ function distributionTable(groups: DistGroup[]): string {
   return h;
 }
 
-/** 과목별 완성 분량 — 이번 주에 시간을 쓴 과목만 싣는다. */
+/** 과목별·요일별 완성 분량 — 이번 주에 시간을 쓴 과목만 싣는다. */
 function progressTable(data: WeekData): string {
   const act = displayTotals(data, "act");
   const plan = displayTotals(data, "plan");
@@ -128,17 +128,24 @@ function progressTable(data: WeekData): string {
 
   let h = `<p style="font-size:11pt;margin:10pt 0 3pt 0"><strong>과목별 완성 분량</strong></p>
 <table style="border-collapse:collapse;width:100%"><tr>
-<td style="${head("width:90px")}">과목</td>
-<td style="${head("width:60px")}">실행 시간</td>
-<td style="${head()}">어디까지 했나</td></tr>`;
+<td style="${head("width:70px")}">과목</td>
+<td style="${head("width:44px")}">주간</td>`;
+  DAYS.forEach((d) => {
+    h += `<td style="${head()}">${DAY_KO[d]}</td>`;
+  });
+  h += "</tr>";
 
   rows.forEach((c) => {
     const hours = DAYS.reduce((s, d) => s + act[d][c.key], 0);
     h += `<tr>
 <td style="${cell("font-size:9pt")}">${c.ko}</td>
-<td style="${cell("text-align:center;font-size:9pt")}">${fmt(hours)}h</td>
-<td style="${cell("font-size:9pt")}">${esc(data.progress?.[c.key]) || "&nbsp;"}</td>
-</tr>`;
+<td style="${cell("text-align:center;font-size:8.5pt")}">${fmt(hours)}h</td>`;
+    DAYS.forEach((d) => {
+      h += `<td style="${cell("font-size:8.5pt")}">${
+        esc(data.progress?.[c.key]?.[d]) || "&nbsp;"
+      }</td>`;
+    });
+    h += "</tr>";
   });
 
   return h + "</table>";

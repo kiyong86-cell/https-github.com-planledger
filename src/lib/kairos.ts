@@ -95,8 +95,8 @@ export type Grid = Record<DayKey, (CatKey | null)[]>;
 export type WeekData = {
   days: Record<DayKey, DayPlan>;
   grid: { plan: Grid; act: Grid };
-  /** 과목별 완성 분량 메모 (예: 국어 → "문학 3단원까지") */
-  progress: Record<CatKey, string>;
+  /** 과목별·요일별 완성 분량 (예: progress.korean.MON = "문학 3단원") */
+  progress: Record<CatKey, Partial<Record<DayKey, string>>>;
 };
 
 export type GridMode = "plan" | "act";
@@ -155,8 +155,19 @@ export function normalizeWeek(raw: unknown): WeekData {
     });
   });
   if (src.progress && typeof src.progress === "object") {
-    Object.entries(src.progress).forEach(([k, v]) => {
-      if (typeof v === "string" && CAT_COLOR[k]) base.progress[k] = v;
+    Object.entries(src.progress as Record<string, unknown>).forEach(([k, v]) => {
+      if (!CAT_COLOR[k]) return;
+      if (typeof v === "string") {
+        // 예전에는 과목마다 한 칸이었다. 월요일 칸으로 옮겨 둔다.
+        if (v.trim()) base.progress[k] = { MON: v };
+      } else if (v && typeof v === "object") {
+        const byDay: Partial<Record<DayKey, string>> = {};
+        DAYS.forEach((d) => {
+          const text = (v as Record<string, unknown>)[d];
+          if (typeof text === "string" && text.trim()) byDay[d] = text;
+        });
+        if (Object.keys(byDay).length) base.progress[k] = byDay;
+      }
     });
   }
   return base;

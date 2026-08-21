@@ -6,6 +6,11 @@ import SchoolHeader from "@/components/SchoolHeader";
 import { createClient } from "@/lib/supabase/client";
 import { KairosMember } from "@/lib/school";
 import {
+  Feedback,
+  loadFeedbackForWeek,
+  saveFeedback,
+} from "@/lib/kairosFeedback";
+import {
   adherence,
   currentWeekValue,
   DAYS,
@@ -16,12 +21,21 @@ import {
   WeekData,
 } from "@/lib/kairos";
 
-type Row = KairosMember & { data: WeekData | null };
+type Row = KairosMember & { data: WeekData | null; feedback: Feedback | null };
 
-export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
+export default function SchoolTeacherClient({
+  isAdmin,
+  myName,
+}: {
+  isAdmin: boolean;
+  myName: string;
+}) {
   const [week, setWeek] = useState("");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openFor, setOpenFor] = useState<string | null>(null); // 피드백 쓰는 학생
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => setWeek(currentWeekValue()), []);
 
@@ -39,6 +53,13 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
         supabase.from("kairos_weeks").select("user_id, data").eq("week", week),
       ]);
 
+    let feedbacks = new Map<string, Feedback>();
+    try {
+      feedbacks = await loadFeedbackForWeek(week);
+    } catch {
+      // 피드백 표를 아직 만들지 않았어도 현황은 보여준다
+    }
+
     if (memberError) {
       setError("명단을 불러오지 못했습니다. 승인 상태를 확인해주세요.");
       setRows([]);
@@ -54,7 +75,11 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
     setRows(
       ((members ?? []) as KairosMember[])
         .filter((m) => m.role === "student")
-        .map((m) => ({ ...m, data: byUser.get(m.user_id) ?? null }))
+        .map((m) => ({
+          ...m,
+          data: byUser.get(m.user_id) ?? null,
+          feedback: feedbacks.get(m.user_id) ?? null,
+        }))
     );
   }, [week]);
 
@@ -104,18 +129,19 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
                 <th className="border-b px-3 py-2">실행 시간</th>
                 <th className="border-b px-3 py-2">평균 달성률</th>
                 <th className="border-b px-3 py-2">할 일 완료</th>
+                <th className="border-b px-3 py-2">피드백</th>
               </tr>
             </thead>
             <tbody>
               {rows === null ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
                     불러오는 중...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={8} className="px-3 py-8 text-center text-slate-400">
                     승인된 학생이 없습니다.
                   </td>
                 </tr>
@@ -176,6 +202,21 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
                       <td className="px-3 py-2 text-center text-slate-500">
                         {todos.length ? `${doneCount} / ${todos.length}` : ""}
                       </td>
+                      <td className="px-3 py-2 text-center">
+                        <button
+                          onClick={() => {
+                            setOpenFor(r.user_id);
+                            setDraft(r.feedback?.text ?? "");
+                          }}
+                          className={`rounded border px-2 py-1 text-xs ${
+                            r.feedback?.text
+                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                              : "hover:bg-slate-50"
+                          }`}
+                        >
+                          {r.feedback?.text ? "피드백 수정" : "피드백 쓰기"}
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
@@ -183,6 +224,58 @@ export default function SchoolTeacherClient({ isAdmin }: { isAdmin: boolean }) {
             </tbody>
           </table>
         </div>
+
+        {openFor && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+            <div className="w-full max-w-lg rounded-lg bg-white p-5 shadow-lg">
+              <h2 className="text-base font-semibold text-slate-900">
+                {rows?.find((r) => r.user_id === openFor)?.name} 학생에게 피드백
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                {week} · 학생이 자기 시간표 화면에서 바로 볼 수 있습니다.
+              </p>
+              <textarea
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                rows={6}
+                placeholder="이번 주 계획을 잘 지켰어요. 다음 주에는 공부 시간을 조금 더 잡아볼까요?"
+                className="mt-3 w-full rounded-md border p-3 text-sm focus:border-slate-500 focus:outline-none"
+              />
+              {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+              <div className="mt-3 flex justify-end gap-2">
+                <button
+                  onClick={() => setOpenFor(null)}
+                  className="rounded-md border px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                >
+                  닫기
+                </button>
+                <button
+                  disabled={saving}
+                  onClick={async () => {
+                    setSaving(true);
+                    try {
+                      await saveFeedback(openFor, week, draft, myName);
+                      setError(null);
+                      setOpenFor(null);
+                      load();
+                    } catch (e) {
+                      setError(
+                        `피드백을 저장하지 못했습니다. (${
+                          e instanceof Error ? e.message : "알 수 없는 오류"
+                        })`
+                      );
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  className="rounded-md bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+                >
+                  {saving ? "저장 중..." : "저장"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <p className="mt-4 text-xs text-slate-400">
           학생에게 알려줄 주소: <b>planledger.co.kr/school</b> — 각자 이메일로

@@ -10,5 +10,10 @@ export default async function SchoolTeacherPage() {
   if (!session) redirect("/school");
   if (!isStaff(session.role)) redirect("/school");
 
-  return <SchoolTeacherClient isAdmin={session.isAdmin} />;
+  return (
+    <SchoolTeacherClient
+      isAdmin={session.isAdmin}
+      myName={session.member?.name || session.email}
+    />
+  );
 }

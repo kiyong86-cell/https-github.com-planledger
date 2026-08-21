@@ -66,6 +66,19 @@ create table if not exists public.kairos_weeks (
 create index if not exists kairos_weeks_week_idx on public.kairos_weeks (week);
 
 
+-- 1-4. 교사 피드백 (한 학생의 한 주에 하나)
+create table if not exists public.kairos_feedback (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references auth.users(id) on delete cascade,
+  week text not null,
+  teacher_id uuid references auth.users(id) on delete set null,
+  teacher_name text not null default '',
+  text text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (student_id, week)
+);
+
 -- ============================================================
 -- 2. 역할 판별 함수 (아래 접근 규칙에서 사용)
 -- ============================================================
@@ -193,6 +206,30 @@ create policy "kairos_weeks_delete_own"
   on public.kairos_weeks for delete
   using (auth.uid() = user_id);
 
+
+-- 3-4. 교사 피드백: 학생은 자기 것 읽기만, 쓰기는 교사·관리자만
+alter table public.kairos_feedback enable row level security;
+
+drop policy if exists "kairos_feedback_select" on public.kairos_feedback;
+create policy "kairos_feedback_select"
+  on public.kairos_feedback for select
+  using (auth.uid() = student_id or public.kairos_is_staff());
+
+drop policy if exists "kairos_feedback_insert_staff" on public.kairos_feedback;
+create policy "kairos_feedback_insert_staff"
+  on public.kairos_feedback for insert
+  with check (public.kairos_is_staff());
+
+drop policy if exists "kairos_feedback_update_staff" on public.kairos_feedback;
+create policy "kairos_feedback_update_staff"
+  on public.kairos_feedback for update
+  using (public.kairos_is_staff())
+  with check (public.kairos_is_staff());
+
+drop policy if exists "kairos_feedback_delete_staff" on public.kairos_feedback;
+create policy "kairos_feedback_delete_staff"
+  on public.kairos_feedback for delete
+  using (public.kairos_is_staff());
 
 -- ============================================================
 -- 4. 예전 구조 정리 (처음 설치하는 경우 아무 일도 하지 않음)
