@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import SchoolHeader from "@/components/SchoolHeader";
+import WeekSelect from "@/components/WeekSelect";
 import { createClient } from "@/lib/supabase/client";
 import { KairosMember } from "@/lib/school";
 import {
@@ -106,12 +107,7 @@ export default function SchoolTeacherClient({
               </p>
             )}
           </div>
-          <input
-            type="week"
-            value={week}
-            onChange={(e) => setWeek(e.target.value || currentWeekValue())}
-            className="rounded-md border px-2 py-1.5 text-sm"
-          />
+          <WeekSelect value={week} onChange={setWeek} />
         </div>
 
         {error && (

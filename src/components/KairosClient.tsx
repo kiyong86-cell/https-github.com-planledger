@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import SchoolHeader from "@/components/SchoolHeader";
+import WeekSelect from "@/components/WeekSelect";
 import { useI18n } from "@/components/LangProvider";
 import { loadWeek, saveWeek } from "@/lib/kairosStore";
 import { Feedback, loadMyFeedback } from "@/lib/kairosFeedback";
@@ -259,12 +260,7 @@ export default function KairosClient({
             >
               ←
             </button>
-            <input
-              type="week"
-              value={week}
-              onChange={(e) => setWeek(e.target.value || currentWeekValue())}
-              className="rounded-md border px-2 py-1.5 text-sm"
-            />
+            <WeekSelect value={week} onChange={setWeek} />
             <button
               onClick={() => setWeek(shiftWeek(week, 1))}
               className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm hover:bg-slate-50"
