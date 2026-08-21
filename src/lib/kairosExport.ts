@@ -12,7 +12,6 @@ import {
   fmt,
   GridMode,
   gridTotals,
-  NIGHT_REST,
   SLOTS,
   START_HOUR,
   sumDay,
@@ -106,7 +105,7 @@ function distributionTable(groups: DistGroup[]): string {
     DAYS.forEach((d) => {
       const s = sumDay(totals[d]);
       grand += s;
-      const off = s !== 24 && s !== NIGHT_REST;
+      const off = s !== 24 && s !== 0;
       h += `<td style="${head(
         `font-size:8.5pt;${off ? "color:#c0392b" : ""}`
       )}">${fmt(s)}</td>`;
@@ -290,7 +289,7 @@ ${weeklySheet(data, week)}
   body += `<div style="page-break-after:always">
 ${title("24시간을 어떻게 사용할 것인가? (계획·실행)")}
 ${legend(data)}${gridTable(data)}
-<p style="font-size:8.5pt">※ 00~06시 6시간은 잠·휴식으로 자동 계산되어 합계에 포함됩니다.</p>
+<p style="font-size:8.5pt">※ 하루 24시간(00~24시) 전체입니다. 한 칸은 30분입니다.</p>
 </div>`;
 
   // 3장 — 시간 분배 (한 표에 나란히)
@@ -307,7 +306,7 @@ ${legend(data)}${gridTable(data)}
   body += `<div>
 ${title("시간 분배")}
 ${distributionTable(groups)}
-<p style="font-size:8.5pt">※ 실행 칸의 작은 숫자는 계획 대비 차이입니다. 00~06시 잠·휴식 6시간이 합계에 포함되어 있습니다.</p>
+<p style="font-size:8.5pt">※ 실행 칸의 작은 숫자는 계획 대비 차이입니다. 하루를 다 칠하면 합계가 24가 됩니다.</p>
 ${progressTable(data)}
 </div>`;
 

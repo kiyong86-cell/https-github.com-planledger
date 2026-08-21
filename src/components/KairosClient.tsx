@@ -22,7 +22,6 @@ import {
   fmt,
   GridMode,
   gridTotals,
-  NIGHT_REST,
   shiftWeek,
   SLOTS,
   START_HOUR,
@@ -820,6 +819,10 @@ function TotalsTable({
         <div className="rounded border border-dashed p-6 text-center text-xs text-slate-400">
           {emptyText}
         </div>
+      ) : CATS.every((c) => DAYS.every((d) => !totals[d][c.key])) ? (
+        <div className="rounded border border-dashed p-6 text-center text-xs text-slate-400">
+          아직 칠한 칸이 없습니다.
+        </div>
       ) : (
         <table className="w-full border-collapse text-xs">
           <thead>
@@ -870,7 +873,7 @@ function TotalsTable({
               <td className="border px-1 py-1">Σ</td>
               {DAYS.map((d) => {
                 const s = sumDay(totals[d]);
-                const off = s !== 24 && s !== NIGHT_REST;
+                const off = s !== 24 && s !== 0;
                 return (
                   <td
                     key={d}

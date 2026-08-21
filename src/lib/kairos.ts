@@ -70,10 +70,12 @@ export const DAY_KO: Record<DayKey, string> = {
   SAT: "토",
 };
 
-export const START_HOUR = 6;
+export const START_HOUR = 0; // 하루 전체(00~24시)를 표에 담는다
 export const END_HOUR = 24;
 export const SLOTS = (END_HOUR - START_HOUR) * 2; // 30분 한 칸
-export const NIGHT_REST = 6; // 00~06시는 잠·휴식으로 자동 계산
+/** 예전 표(06~24시)를 하루 전체 표로 옮길 때 쓰는 칸 수 */
+const LEGACY_OFFSET = 12; // 06시 = 12번째 30분 칸
+export const LEGACY_SLOTS = 36;
 export const TODO_ROWS = 12;
 export const TMR_ROWS = 8;
 
@@ -144,7 +146,11 @@ export function normalizeWeek(raw: unknown): WeekData {
     (["plan", "act"] as GridMode[]).forEach((m) => {
       const g = src.grid?.[m]?.[d];
       if (Array.isArray(g)) {
-        for (let i = 0; i < SLOTS; i++) base.grid[m][d][i] = normalizeCat(g[i]);
+        // 예전 기록은 06시부터 36칸이었다. 같은 시각에 오도록 12칸 밀어 넣는다.
+        const offset = g.length === LEGACY_SLOTS ? LEGACY_OFFSET : 0;
+        for (let i = 0; i < g.length && i + offset < SLOTS; i++) {
+          base.grid[m][d][i + offset] = normalizeCat(g[i]);
+        }
       }
     });
   });
@@ -176,17 +182,12 @@ export function gridTotals(w: WeekData, mode: GridMode): Record<DayKey, CatTotal
   return out;
 }
 
-/** 표시용 집계 — 00~06시 6시간을 잠·휴식에 더해 하루 24시간을 채운다. */
+/** 표시용 집계 — 이제 표가 하루 전체(00~24시)를 담으므로 그대로 쓴다. */
 export function displayTotals(
   w: WeekData,
   mode: GridMode
 ): Record<DayKey, CatTotals> {
-  const t = gridTotals(w, mode);
-  const out = {} as Record<DayKey, CatTotals>;
-  DAYS.forEach((d) => {
-    out[d] = { ...t[d], rest: t[d].rest + NIGHT_REST };
-  });
-  return out;
+  return gridTotals(w, mode);
 }
 
 export function sumDay(col: CatTotals): number {
