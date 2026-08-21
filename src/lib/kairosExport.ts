@@ -3,6 +3,7 @@
 import {
   adherence,
   CATS,
+  SUBJECT_CATS,
   DAY_KO,
   DAYS,
   dayDate,
@@ -63,8 +64,12 @@ function distributionTable(groups: DistGroup[]): string {
   });
   h += "</tr>";
 
-  // 항목별 행
-  CATS.forEach((c) => {
+  // 항목별 행 — 어느 표에서든 시간이 있는 항목만 싣는다
+  const usedCats = CATS.filter((c) =>
+    groups.some((g) => DAYS.some((d) => g.totals[d][c.key] > 0))
+  );
+
+  usedCats.forEach((c) => {
     h += "<tr>";
     groups.forEach(({ totals, compare }) => {
       let wk = 0;
@@ -113,6 +118,33 @@ function distributionTable(groups: DistGroup[]): string {
   return h;
 }
 
+/** 과목별 완성 분량 — 이번 주에 시간을 쓴 과목만 싣는다. */
+function progressTable(data: WeekData): string {
+  const act = displayTotals(data, "act");
+  const plan = displayTotals(data, "plan");
+  const rows = SUBJECT_CATS.filter((c) =>
+    DAYS.some((d) => act[d][c.key] > 0 || plan[d][c.key] > 0)
+  );
+  if (rows.length === 0) return "";
+
+  let h = `<p style="font-size:11pt;margin:10pt 0 3pt 0"><strong>과목별 완성 분량</strong></p>
+<table style="border-collapse:collapse;width:100%"><tr>
+<td style="${head("width:90px")}">과목</td>
+<td style="${head("width:60px")}">실행 시간</td>
+<td style="${head()}">어디까지 했나</td></tr>`;
+
+  rows.forEach((c) => {
+    const hours = DAYS.reduce((s, d) => s + act[d][c.key], 0);
+    h += `<tr>
+<td style="${cell("font-size:9pt")}">${c.ko}</td>
+<td style="${cell("text-align:center;font-size:9pt")}">${fmt(hours)}h</td>
+<td style="${cell("font-size:9pt")}">${esc(data.progress?.[c.key]) || "&nbsp;"}</td>
+</tr>`;
+  });
+
+  return h + "</table>";
+}
+
 function gridTable(data: WeekData): string {
   const pt = gridTotals(data, "plan");
   const at = gridTotals(data, "act");
@@ -155,11 +187,24 @@ function gridTable(data: WeekData): string {
   return h + "</table>";
 }
 
-function legend(): string {
-  return `<p style="font-size:9pt">${CATS.map(
-    (c) =>
-      `<span bgcolor="${c.color}" style="background-color:${c.color}">&nbsp;&nbsp;&nbsp;</span> ${c.ko}`
-  ).join(" &nbsp; ")}</p>`;
+/** 색 설명 — 이번 주에 쓴 항목만 (28개를 다 싣으면 너무 길다) */
+function legend(data: WeekData): string {
+  const used = new Set<string>();
+  DAYS.forEach((d) => {
+    (["plan", "act"] as GridMode[]).forEach((m) => {
+      data.grid[m][d].forEach((k) => {
+        if (k) used.add(k);
+      });
+    });
+  });
+  const list = CATS.filter((c) => used.has(c.key));
+  if (list.length === 0) return "";
+  return `<p style="font-size:9pt">${list
+    .map(
+      (c) =>
+        `<span bgcolor="${c.color}" style="background-color:${c.color}">&nbsp;&nbsp;&nbsp;</span> ${c.ko}`
+    )
+    .join(" &nbsp; ")}</p>`;
 }
 
 /** 1장 — 주간 학습 계획: 요일 6줄을 한 표에 담는다. */
@@ -244,7 +289,7 @@ ${weeklySheet(data, week)}
   // 2장 — 24시간 계획·실행
   body += `<div style="page-break-after:always">
 ${title("24시간을 어떻게 사용할 것인가? (계획·실행)")}
-${legend()}${gridTable(data)}
+${legend(data)}${gridTable(data)}
 <p style="font-size:8.5pt">※ 00~06시 6시간은 잠·휴식으로 자동 계산되어 합계에 포함됩니다.</p>
 </div>`;
 
@@ -263,6 +308,7 @@ ${legend()}${gridTable(data)}
 ${title("시간 분배")}
 ${distributionTable(groups)}
 <p style="font-size:8.5pt">※ 실행 칸의 작은 숫자는 계획 대비 차이입니다. 00~06시 잠·휴식 6시간이 합계에 포함되어 있습니다.</p>
+${progressTable(data)}
 </div>`;
 
   return `<html><head><meta charset="utf-8"><title>정직이들 ${week}</title>

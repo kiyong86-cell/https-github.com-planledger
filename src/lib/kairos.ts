@@ -1,26 +1,57 @@
 // KAIROS — 주간 시간 계획·실행 관리에 쓰는 타입과 계산 함수.
 // 화면(app/kairos)과 내보내기(kairosExport)가 같은 계산을 쓰도록 여기 한 곳에 모아둔다.
 
-export type CatKey =
-  | "pray"
-  | "school"
-  | "rest"
-  | "academy"
-  | "play"
-  | "etc"
-  | "study"
-  | "buffer";
+export type CatKey = string;
 
-export const CATS: { key: CatKey; ko: string; en: string; color: string }[] = [
+/** 생활 항목 — 공부 외의 시간 */
+export const LIFE_CATS: { key: CatKey; ko: string; en: string; color: string }[] = [
   { key: "pray", ko: "기도·묵상", en: "Prayer", color: "#8b5cf6" },
-  { key: "school", ko: "학교", en: "School", color: "#3b82f6" },
   { key: "rest", ko: "잠·휴식", en: "Sleep/Rest", color: "#94a3b8" },
   { key: "academy", ko: "학원·과외", en: "Tutoring", color: "#14b8a6" },
   { key: "play", ko: "노는 시간", en: "Free time", color: "#f59e0b" },
+  { key: "study", ko: "공부(자습)", en: "Self-study", color: "#22c55e" },
   { key: "etc", ko: "기타", en: "Other", color: "#a3765a" },
-  { key: "study", ko: "공부", en: "Study", color: "#22c55e" },
   { key: "buffer", ko: "땜빵", en: "Buffer", color: "#ec4899" },
 ];
+
+/** 학교 과목 */
+export const SUBJECT_CATS: { key: CatKey; ko: string; en: string; color: string }[] = [
+  { key: "korean", ko: "국어", en: "Korean", color: "#e11d48" },
+  { key: "english", ko: "영어", en: "English", color: "#2563eb" },
+  { key: "math", ko: "수학", en: "Math", color: "#7c3aed" },
+  { key: "social", ko: "사회", en: "Social studies", color: "#ea580c" },
+  { key: "science", ko: "과학", en: "Science", color: "#0891b2" },
+  { key: "history", ko: "한국사", en: "Korean history", color: "#b45309" },
+  { key: "talk", ko: "대화수업", en: "Dialogue class", color: "#db2777" },
+  { key: "career", ko: "진로", en: "Career", color: "#4d7c0f" },
+  { key: "council", ko: "자치활동", en: "Student council", color: "#0d9488" },
+  { key: "writing", ko: "글쓰기", en: "Writing", color: "#9333ea" },
+  { key: "reading", ko: "독서", en: "Reading", color: "#1d4ed8" },
+  { key: "art", ko: "미술", en: "Art", color: "#f43f5e" },
+  { key: "reflection", ko: "리플렉션", en: "Reflection", color: "#64748b" },
+  { key: "music", ko: "악기", en: "Instrument", color: "#c026d3" },
+  { key: "pe", ko: "운동수업", en: "PE", color: "#16a34a" },
+  { key: "library", ko: "도서관", en: "Library", color: "#78716c" },
+  { key: "choir", ko: "합창", en: "Choir", color: "#d946ef" },
+  { key: "club", ko: "동아리", en: "Club", color: "#059669" },
+  { key: "farm", ko: "농사", en: "Farming", color: "#65a30d" },
+  { key: "bible", ko: "성경", en: "Bible", color: "#7e22ce" },
+  { key: "worship", ko: "예배", en: "Worship", color: "#4f46e5" },
+];
+
+export const CATS = [...LIFE_CATS, ...SUBJECT_CATS];
+
+/** 과목인지 (완성 분량을 적는 항목) */
+export const SUBJECT_KEYS = new Set(SUBJECT_CATS.map((c) => c.key));
+
+// 예전 "학교" 항목으로 칠해둔 기록은 "기타"로 옮겨 읽는다.
+const LEGACY_MAP: Record<string, CatKey> = { school: "etc" };
+
+export function normalizeCat(key: unknown): CatKey | null {
+  if (typeof key !== "string") return null;
+  if (CAT_COLOR[key]) return key;
+  return LEGACY_MAP[key] ?? null;
+}
 
 export const CAT_COLOR: Record<CatKey, string> = CATS.reduce(
   (m, c) => ({ ...m, [c.key]: c.color }),
@@ -62,6 +93,8 @@ export type Grid = Record<DayKey, (CatKey | null)[]>;
 export type WeekData = {
   days: Record<DayKey, DayPlan>;
   grid: { plan: Grid; act: Grid };
+  /** 과목별 완성 분량 메모 (예: 국어 → "문학 3단원까지") */
+  progress: Record<CatKey, string>;
 };
 
 export type GridMode = "plan" | "act";
@@ -90,7 +123,7 @@ export function blankWeek(): WeekData {
     plan[d] = Array(SLOTS).fill(null);
     act[d] = Array(SLOTS).fill(null);
   });
-  return { days, grid: { plan, act } };
+  return { days, grid: { plan, act }, progress: {} };
 }
 
 /** 저장된 값이 낡거나 일부만 있어도 빈 주 위에 덮어써서 항상 온전한 모양으로 만든다. */
@@ -111,10 +144,15 @@ export function normalizeWeek(raw: unknown): WeekData {
     (["plan", "act"] as GridMode[]).forEach((m) => {
       const g = src.grid?.[m]?.[d];
       if (Array.isArray(g)) {
-        for (let i = 0; i < SLOTS; i++) base.grid[m][d][i] = g[i] ?? null;
+        for (let i = 0; i < SLOTS; i++) base.grid[m][d][i] = normalizeCat(g[i]);
       }
     });
   });
+  if (src.progress && typeof src.progress === "object") {
+    Object.entries(src.progress).forEach(([k, v]) => {
+      if (typeof v === "string" && CAT_COLOR[k]) base.progress[k] = v;
+    });
+  }
   return base;
 }
 
@@ -131,7 +169,7 @@ export function gridTotals(w: WeekData, mode: GridMode): Record<DayKey, CatTotal
       {} as CatTotals
     );
     w.grid[mode][d].forEach((k) => {
-      if (k) col[k] += 0.5;
+      if (k && k in col) col[k] += 0.5;
     });
     out[d] = col;
   });

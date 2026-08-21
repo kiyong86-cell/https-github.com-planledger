@@ -7,6 +7,9 @@ import { loadWeek, saveWeek } from "@/lib/kairosStore";
 import {
   adherence,
   blankWeek,
+  LIFE_CATS,
+  SUBJECT_CATS,
+  SUBJECT_KEYS,
   CatKey,
   CATS,
   currentWeekValue,
@@ -152,6 +155,19 @@ export default function KairosClient({
     return () => window.removeEventListener("mouseup", stop);
   }, []);
 
+  // 저장 버튼 — 자동 저장을 기다리지 않고 바로 저장한다.
+  async function saveNow() {
+    if (!data || !week) return;
+    setSaveState("saving");
+    try {
+      await saveWeek(week, data);
+      dirty.current = false;
+      setSaveState("saved");
+    } catch {
+      setSaveState("failed");
+    }
+  }
+
   async function runExport(kind: "pdf" | "word" | "hwpx") {
     if (!data || !week) return;
     setBusy(kind);
@@ -182,7 +198,7 @@ export default function KairosClient({
         showTeacherLink={isStaff}
         showAdminLink={isAdmin}
       />
-        <main className="mx-auto max-w-6xl px-4 py-10 text-sm text-slate-400">
+        <main className="mx-auto max-w-[1700px] px-4 py-10 text-sm text-slate-400">
           {t("kairos.loading")}
         </main>
       </div>
@@ -208,7 +224,7 @@ export default function KairosClient({
         showTeacherLink={isStaff}
         showAdminLink={isAdmin}
       />
-      <main className="mx-auto max-w-6xl px-4 py-8">
+      <main className="mx-auto max-w-[1700px] px-4 py-8">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">
@@ -217,12 +233,33 @@ export default function KairosClient({
             <p className="mt-1 text-sm text-slate-500">{t("kairos.intro")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setWeek(shiftWeek(week, -1))}
+              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm hover:bg-slate-50"
+              title="지난 주"
+            >
+              ←
+            </button>
             <input
               type="week"
               value={week}
               onChange={(e) => setWeek(e.target.value || currentWeekValue())}
               className="rounded-md border px-2 py-1.5 text-sm"
             />
+            <button
+              onClick={() => setWeek(shiftWeek(week, 1))}
+              className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm hover:bg-slate-50"
+              title="다음 주"
+            >
+              →
+            </button>
+            <button
+              onClick={saveNow}
+              disabled={saveState === "saving"}
+              className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-40"
+            >
+              {saveState === "saving" ? "저장 중..." : "저장"}
+            </button>
             <button
               onClick={() => runExport("pdf")}
               disabled={busy !== null}
@@ -496,24 +533,38 @@ export default function KairosClient({
             </h2>
             <p className="mt-1 text-sm text-slate-500">{t("kairos.gridHint")}</p>
 
-            <div className="my-4 flex flex-wrap gap-2">
-              {CATS.map((c) => (
-                <button
-                  key={c.key}
-                  onClick={() => setBrush(c.key)}
-                  className={`flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm ${
-                    brush === c.key
-                      ? "border-slate-900 font-semibold"
-                      : "border-slate-300"
-                  }`}
-                >
-                  <span
-                    className="inline-block h-3.5 w-3.5 rounded-sm"
-                    style={{ background: c.color }}
-                  />
-                  {catName(c)}
-                </button>
+            <div className="my-4 space-y-2">
+              {(
+                [
+                  ["생활", LIFE_CATS],
+                  ["과목", SUBJECT_CATS],
+                ] as const
+              ).map(([groupName, list]) => (
+                <div key={groupName} className="flex flex-wrap items-center gap-1.5">
+                  <span className="w-8 shrink-0 text-xs text-slate-400">
+                    {groupName}
+                  </span>
+                  {list.map((c) => (
+                    <button
+                      key={c.key}
+                      onClick={() => setBrush(c.key)}
+                      className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm ${
+                        brush === c.key
+                          ? "border-slate-900 font-semibold"
+                          : "border-slate-300"
+                      }`}
+                    >
+                      <span
+                        className="inline-block h-3.5 w-3.5 rounded-sm"
+                        style={{ background: c.color }}
+                      />
+                      {catName(c)}
+                    </button>
+                  ))}
+                </div>
               ))}
+            </div>
+            <div className="my-4 flex flex-wrap gap-2">
               <button
                 onClick={() => setBrush(null)}
                 className={`rounded-md border px-3 py-1.5 text-sm ${
@@ -535,7 +586,7 @@ export default function KairosClient({
 
             <div className="overflow-x-auto">
               <table
-                className="border-collapse select-none"
+                className="w-full table-fixed border-collapse select-none"
                 onTouchMove={(e) => {
                   const touch = e.touches[0];
                   const el = document.elementFromPoint(
@@ -551,20 +602,20 @@ export default function KairosClient({
               >
                 <thead>
                   <tr>
-                    <th className="border bg-slate-100 px-1 py-1 text-xs">
+                    <th className="w-14 border bg-slate-100 px-1 py-1 text-xs">
                       {t("kairos.dayCol")}
                     </th>
-                    <th className="border bg-slate-100 px-1 py-1 text-xs" />
+                    <th className="w-12 border bg-slate-100 px-1 py-1 text-xs" />
                     {Array.from({ length: END_HOUR - START_HOUR }, (_, i) => (
                       <th
                         key={i}
                         colSpan={2}
-                        className="border bg-slate-100 px-0 py-1 text-[10px] font-normal text-slate-500"
+                        className="border bg-slate-100 px-0 py-1 text-xs font-normal text-slate-500"
                       >
                         {String(START_HOUR + i).padStart(2, "0")}
                       </th>
                     ))}
-                    <th className="border bg-slate-100 px-1 py-1 text-xs">
+                    <th className="w-16 border bg-slate-100 px-1 py-1 text-xs">
                       {t("kairos.sum")}
                     </th>
                   </tr>
@@ -576,14 +627,14 @@ export default function KairosClient({
                         {mi === 0 && (
                           <td
                             rowSpan={2}
-                            className="border bg-slate-50 px-2 text-center text-xs font-semibold"
+                            className="border bg-slate-50 px-2 text-center text-sm font-semibold"
                           >
                             {DAY_KO[d]}
                             <br />
                             {d}
                           </td>
                         )}
-                        <td className="border bg-slate-50 px-1 text-center text-[10px] text-slate-500">
+                        <td className="border bg-slate-50 px-1 text-center text-xs text-slate-500">
                           {t(label)}
                         </td>
                         {Array.from({ length: SLOTS }, (_, i) => {
@@ -601,7 +652,7 @@ export default function KairosClient({
                               onMouseEnter={() => {
                                 if (painting.current) paint(mode, d, i, true);
                               }}
-                              className={`h-5 w-[13px] cursor-pointer border-y border-r p-0 ${
+                              className={`h-7 cursor-pointer border-y border-r p-0 ${
                                 i % 2 === 0 ? "border-r-dashed" : ""
                               }`}
                               style={{
@@ -612,7 +663,7 @@ export default function KairosClient({
                             />
                           );
                         })}
-                        <td className="border bg-slate-50 px-1 text-center text-[10px]">
+                        <td className="border bg-slate-50 px-1 text-center text-xs">
                           {fmt(sumDay(gridTotals(data, mode)[d]))}h
                         </td>
                       </tr>
@@ -652,6 +703,66 @@ export default function KairosClient({
               />
             </div>
             <p className="mt-4 text-xs text-slate-400">{t("kairos.distNote")}</p>
+
+            <h3 className="mt-8 text-base font-semibold text-slate-900">
+              과목별 완성 분량
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              이번 주에 어디까지 했는지 적어두세요. 시간은 위에서 자동으로
+              계산되고, 분량은 직접 적습니다. (예: 수학 익힘책 32~48쪽)
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {SUBJECT_CATS.filter((c) =>
+                DAYS.some(
+                  (d) => planTotals[d][c.key] > 0 || actTotals[d][c.key] > 0
+                )
+              ).map((c) => {
+                const hours = DAYS.reduce(
+                  (sum, d) => sum + actTotals[d][c.key],
+                  0
+                );
+                return (
+                  <label
+                    key={c.key}
+                    className="flex items-center gap-2 rounded-md border bg-slate-50 px-2 py-1.5"
+                  >
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-sm"
+                      style={{ background: c.color }}
+                    />
+                    <span className="w-20 shrink-0 text-sm text-slate-700">
+                      {catName(c)}
+                    </span>
+                    <span className="w-12 shrink-0 text-right text-xs text-slate-400">
+                      {fmt(hours)}h
+                    </span>
+                    <input
+                      value={data.progress[c.key] ?? ""}
+                      onChange={(e) =>
+                        edit((prev) => ({
+                          ...prev,
+                          progress: {
+                            ...prev.progress,
+                            [c.key]: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="어디까지 했나요?"
+                      className="w-full rounded border-0 bg-transparent px-1 py-0.5 text-sm outline-none focus:bg-white"
+                    />
+                  </label>
+                );
+              })}
+              {SUBJECT_CATS.every((c) =>
+                DAYS.every(
+                  (d) => !planTotals[d][c.key] && !actTotals[d][c.key]
+                )
+              ) && (
+                <p className="text-sm text-slate-400">
+                  2번 표에서 과목을 칠하면 여기에 나타납니다.
+                </p>
+              )}
+            </div>
           </section>
         )}
 
@@ -723,7 +834,9 @@ function TotalsTable({
             </tr>
           </thead>
           <tbody>
-            {CATS.map((c) => {
+            {CATS.filter((c) =>
+              DAYS.some((d) => totals[d][c.key] > 0)
+            ).map((c) => {
               const wk = DAYS.reduce((s, d) => s + totals[d][c.key], 0);
               return (
                 <tr key={c.key}>

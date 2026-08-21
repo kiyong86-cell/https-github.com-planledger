@@ -4,6 +4,8 @@
 // 전 과정이 브라우저 안에서만 실행되어 파일이 서버로 전송되지 않는다.
 
 const BORDER = "#808080";
+// 빈 줄 채움 문자(폭 없는 공백). 눈에 보이지 않지만 변환 엔진이 글자로 세어 문단을 남긴다.
+export const BLANK_LINE = "​";
 
 // docx XML에서 표 셀의 배경색·글자색·정렬을 추출한다.
 // mammoth는 색상과 정렬을 모두 버리므로, 원본 XML에서 직접 읽어 나중에 입힌다.
@@ -13,7 +15,29 @@ export type CellStyle = {
   color?: string;
   align?: string; // 가로 정렬 (left/center/right/justify)
   vAlign?: string; // 세로 정렬 (top/middle/bottom)
+  fontPt?: number; // 글자 크기(pt)
 };
+
+// 문단·셀 안 런들의 글자 크기(<w:sz>, 1/2 pt 단위) 중 가장 많이 쓰인 값을 pt로 돌려준다.
+// mammoth는 런의 직접 서식(크기)을 전부 버리므로 원본 XML에서 직접 읽어야 한다.
+// 런 단위까지 살리면 코드가 커지는 데 비해, 레이아웃을 망치는 건 문단별 크기 차이라서
+// 문단(셀) 하나의 대표 크기만 잡는다.
+function dominantFontPt(xml: string): number | undefined {
+  const counts = new Map<number, number>();
+  for (const m of xml.matchAll(/<w:sz w:val="(\d+)"/g)) {
+    const half = Number(m[1]);
+    counts.set(half, (counts.get(half) ?? 0) + 1);
+  }
+  let best: number | undefined;
+  let bestCount = 0;
+  for (const [half, n] of counts) {
+    if (n > bestCount) {
+      best = half;
+      bestCount = n;
+    }
+  }
+  return best === undefined ? undefined : best / 2;
+}
 
 // Word 정렬값(w:jc) → CSS text-align
 const JC_TO_CSS: Record<string, string> = {
@@ -80,6 +104,7 @@ export function extractTableCellStyles(docXml: string): CellStyle[][][] {
         if (jc) style.align = JC_TO_CSS[jc[1]];
         const va = tc.match(/<w:vAlign w:val="(\w+)"/);
         if (va) style.vAlign = VALIGN_TO_CSS[va[1]];
+        style.fontPt = dominantFontPt(tc);
         visible.push(style);
       }
       return visible;
@@ -106,13 +131,18 @@ export function applyTableCellStyles(
       return tr.replace(/<(td|th)((?:\s[^>]*)?)>/g, (m, tag, attrs) => {
         ci++;
         const cs = row[ci];
-        if (!cs || (!cs.fill && !cs.color && !cs.align && !cs.vAlign)) return m;
+        if (
+          !cs ||
+          (!cs.fill && !cs.color && !cs.align && !cs.vAlign && !cs.fontPt)
+        )
+          return m;
         const style = [
           `border:1px solid ${BORDER}`,
           cs.fill ? `background-color:#${cs.fill}` : "",
           cs.color ? `color:#${cs.color}` : "",
           cs.align ? `text-align:${cs.align}` : "",
           cs.vAlign ? `vertical-align:${cs.vAlign}` : "",
+          cs.fontPt ? `font-size:${cs.fontPt}pt` : "",
         ]
           .filter(Boolean)
           .join(";");
@@ -122,10 +152,28 @@ export function applyTableCellStyles(
   });
 }
 
-// 표 밖 본문 문단 중 가운데·오른쪽 정렬된 것만 글자 내용과 함께 추출한다.
+// 표 밖 본문 문단의 정렬(가운데·오른쪽)과 글자 크기를 글자 내용과 함께 추출한다.
 // mammoth는 문단 일부를 합치거나 목록으로 바꾸므로 순서로 짝지으면 어긋난다.
 // 그래서 순서 대신 글자 내용으로 찾아 붙인다.
-export type BodyAlign = { text: string; align: string };
+export type BodyAlign = {
+  text: string;
+  align?: string;
+  pt?: number;
+  lineHeight?: number; // 줄간격 배수 (1.5 = 150%)
+  blanksAfter?: number; // 바로 뒤에 붙어 있던 빈 문단 개수
+};
+
+// <w:spacing w:line="360" w:lineRule="auto"/> → 360/240 = 1.5줄
+// lineRule이 auto가 아니면(exact/atLeast) 절대값이라 배수로 못 바꾸므로 건너뛴다.
+function lineHeightOf(paraXml: string): number | undefined {
+  const sp = paraXml.match(/<w:spacing[^>]*\/>/);
+  if (!sp) return undefined;
+  if (!/w:lineRule="auto"/.test(sp[0])) return undefined;
+  const line = sp[0].match(/w:line="(\d+)"/);
+  if (!line) return undefined;
+  const mult = Number(line[1]) / 240;
+  return mult > 0 ? Math.round(mult * 100) / 100 : undefined;
+}
 
 function plainText(s: string): string {
   return s.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
@@ -139,15 +187,52 @@ export function extractBodyAligns(docXml: string): BodyAlign[] {
     outside = outside.replace(tbl, "");
   }
 
+  const paras = outside.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
+  const textOf = (p: string) =>
+    plainText((p.match(/<w:t[^>]*>[\s\S]*?<\/w:t>/g) || []).join(""));
+
   const out: BodyAlign[] = [];
-  for (const p of outside.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || []) {
+  for (let i = 0; i < paras.length; i++) {
+    const p = paras[i];
+    const text = textOf(p);
+    if (!text) continue; // 빈 문단 자체는 붙일 자리가 없으므로 앞 문단이 대신 기억한다
+
+    // 바로 뒤에 붙어 있는 빈 문단 개수를 센다.
+    // mammoth가 빈 문단을 통째로 버려서 원본의 세로 여백이 사라지고 페이지가 밀린다.
+    let blanksAfter = 0;
+    while (i + 1 + blanksAfter < paras.length && !textOf(paras[i + 1 + blanksAfter])) {
+      blanksAfter++;
+    }
+
     const jc = p.match(/<w:jc w:val="(\w+)"/);
-    const align = jc ? JC_TO_CSS[jc[1]] : undefined;
-    if (!align || align === "left" || align === "justify") continue;
+    let align = jc ? JC_TO_CSS[jc[1]] : undefined;
+    if (align === "left" || align === "justify") align = undefined;
+    const pt = dominantFontPt(p);
+    const lineHeight = lineHeightOf(p);
+    if (!align && !pt && !lineHeight && !blanksAfter) continue;
+
+    out.push({ text, align, pt, lineHeight, blanksAfter });
+  }
+  return out;
+}
+
+// Word가 페이지를 끊은 지점. 명시적 나눔(<w:pageBreakBefore/>, <w:br w:type="page"/>)과
+// Word가 저장할 때 남긴 실제 페이지 경계 표시(lastRenderedPageBreak)를 모두 본다.
+// 원본 페이지 배치를 글꼴 계산으로 똑같이 재현하는 건 불가능하므로,
+// Word가 이미 계산해 적어둔 위치를 그대로 쓴다.
+export function extractPageBreakTexts(docXml: string): string[] {
+  const body = docXml.slice(docXml.indexOf("<w:body>"));
+  const out: string[] = [];
+  for (const p of body.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || []) {
+    const marked =
+      /lastRenderedPageBreak/.test(p) ||
+      /<w:pageBreakBefore\s*\/>/.test(p) ||
+      /<w:br[^>]*w:type="page"/.test(p);
+    if (!marked) continue;
     const text = plainText(
       (p.match(/<w:t[^>]*>[\s\S]*?<\/w:t>/g) || []).join("")
     );
-    if (text) out.push({ text, align });
+    if (text) out.push(text);
   }
   return out;
 }
@@ -172,13 +257,288 @@ export function applyBodyAligns(html: string, aligns: BodyAlign[]): string {
       if (!text) return m;
       const i = pending.findIndex((a) => a.text === text);
       if (i === -1) return m;
-      const { align } = pending[i];
+      const { align, pt, lineHeight, blanksAfter } = pending[i];
       pending.splice(i, 1); // 같은 문단을 두 번 쓰지 않는다
-      return `<${tag} style="text-align:${align}"${attrs}>${inner}</${tag}>`;
+      const style = [
+        align ? `text-align:${align}` : "",
+        pt ? `font-size:${pt}pt` : "",
+        lineHeight ? `line-height:${lineHeight}` : "",
+      ]
+        .filter(Boolean)
+        .join(";");
+      // 원본에 있던 빈 줄을 되살린다.
+      // 엔진이 공백만 든 문단을 버려서 &nbsp;·<br>·빈 <p> 모두 사라진다.
+      // 폭 없는 공백(U+200B)만 글자로 취급돼 살아남는다.
+      const blanks = `<p>${BLANK_LINE}</p>`.repeat(blanksAfter ?? 0);
+      const styled = style
+        ? `<${tag} style="${style}"${attrs}>${inner}</${tag}>`
+        : m;
+      return styled + blanks;
     }
   );
 
   return aligned.replace(/ TBL(\d+) /g, (_m, i) => tables[Number(i)]);
+}
+
+// 문단 위/아래 여백. 변환 엔진이 CSS margin을 통째로 버리므로(전부 0으로 나감)
+// CSS로는 못 넘기고, 변환이 끝난 HWPX를 열어 직접 써넣는다.
+// 단위: HWPUNIT(1pt = 100). docx는 twip(1pt = 20)이라 5배.
+export type ParaMargin = { text: string; prev: number; next: number };
+
+export function extractParaMargins(docXml: string): ParaMargin[] {
+  const body = docXml.slice(docXml.indexOf("<w:body>"));
+  const out: ParaMargin[] = [];
+  for (const p of body.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || []) {
+    const sp = p.match(/<w:spacing[^>]*\/>/);
+    if (!sp) continue;
+    const before = Number(sp[0].match(/w:before="(\d+)"/)?.[1] ?? 0);
+    const after = Number(sp[0].match(/w:after="(\d+)"/)?.[1] ?? 0);
+    if (!before && !after) continue;
+    const text = plainText(
+      (p.match(/<w:t[^>]*>[\s\S]*?<\/w:t>/g) || []).join("")
+    );
+    if (text) out.push({ text, prev: before * 5, next: after * 5 });
+  }
+  return out;
+}
+
+// HWPX section의 문단을 순서대로 훑는다. 여는 태그의 위치·길이와 그 문단의 글자를 함께 돌려준다.
+// 다음 문단이 시작되기 전까지를 그 문단의 글자로 본다.
+// (표처럼 문단 안에 문단이 있으면 바깥 문단은 글자가 비게 되고, 그런 문단은 건너뛴다)
+type SectionPara = { at: number; len: number; tag: string; text: string };
+
+function sectionParagraphs(sectionXml: string): SectionPara[] {
+  const opens = [...sectionXml.matchAll(/<hp:p\b[^>]*>/g)];
+  return opens.map((m, i) => {
+    const at = m.index!;
+    const end = i + 1 < opens.length ? opens[i + 1].index! : sectionXml.length;
+    return {
+      at,
+      len: m[0].length,
+      tag: m[0],
+      text: plainText(
+        [...sectionXml.slice(at, end).matchAll(/<hp:t>([\s\S]*?)<\/hp:t>/g)]
+          .map((t) => t[1])
+          .join("")
+      ),
+    };
+  });
+}
+
+// 위치가 밀리지 않도록 뒤에서부터 갈아끼운다.
+function spliceAll(
+  xml: string,
+  edits: { at: number; len: number; tag: string }[]
+): string {
+  let out = xml;
+  for (const e of [...edits].reverse()) {
+    out = out.slice(0, e.at) + e.tag + out.slice(e.at + e.len);
+  }
+  return out;
+}
+
+/** Word가 끊었던 자리의 문단에 페이지 나눔을 켠다. */
+export function applyPageBreaks(sectionXml: string, texts: string[]): string {
+  if (texts.length === 0) return sectionXml;
+  const pending = [...texts];
+  const edits: { at: number; len: number; tag: string }[] = [];
+
+  for (const p of sectionParagraphs(sectionXml)) {
+    if (!p.text) continue;
+    const k = pending.indexOf(p.text);
+    if (k === -1) continue;
+    pending.splice(k, 1);
+    if (!/pageBreak="0"/.test(p.tag)) continue;
+    edits.push({ at: p.at, len: p.len, tag: p.tag.replace('pageBreak="0"', 'pageBreak="1"') });
+  }
+  return spliceAll(sectionXml, edits);
+}
+
+// 문단 아래 구분선. 변환 엔진은 <p>의 border-bottom을 버리고 <hr>·<u>도 지원하지 않아
+// 결과 파일에 직접 넣는다. 테두리가 하나도 없는 borderFill을 본떠 아래선만 켠 것을 새로 만들고,
+// 그 문단의 paraPr을 복제해 <hh:border>를 붙인다.
+export type ParaBorder = { text: string; color: string; widthMm?: string };
+
+export function applyParaBorders(
+  headerXml: string,
+  sectionXml: string,
+  borders: ParaBorder[]
+): { header: string; section: string } {
+  const unchanged = { header: headerXml, section: sectionXml };
+  if (borders.length === 0) return unchanged;
+
+  const fillsOpen = headerXml.match(/<hh:borderFills itemCnt="(\d+)">/);
+  const paraOpen = headerXml.match(/<hh:paraProperties itemCnt="(\d+)">/);
+  if (!fillsOpen || !paraOpen) return unchanged;
+
+  // 본으로 쓸 borderFill: 사방 테두리가 없고 채움색도 없는 것
+  let maxFillId = 0;
+  let template = "";
+  for (const m of headerXml.matchAll(/<hh:borderFill id="(\d+)"[\s\S]*?<\/hh:borderFill>/g)) {
+    maxFillId = Math.max(maxFillId, Number(m[1]));
+    if (!template && /<hh:bottomBorder type="NONE"/.test(m[0]) && !/fillBrush/.test(m[0])) {
+      template = m[0];
+    }
+  }
+  if (!template) return unchanged;
+
+  const paraBlocks = new Map<string, string>();
+  let maxParaId = -1;
+  for (const m of headerXml.matchAll(/<hh:paraPr id="(\d+)"[\s\S]*?<\/hh:paraPr>/g)) {
+    paraBlocks.set(m[1], m[0]);
+    maxParaId = Math.max(maxParaId, Number(m[1]));
+  }
+  if (paraBlocks.size === 0) return unchanged;
+
+  const newFills: string[] = [];
+  const fillIds = new Map<string, string>();
+  const newParas: string[] = [];
+  const paraIds = new Map<string, string>();
+  const edits: { at: number; len: number; tag: string }[] = [];
+  const pending = [...borders];
+
+  for (const p of sectionParagraphs(sectionXml)) {
+    if (!p.text) continue;
+    const k = pending.findIndex((b) => b.text === p.text);
+    if (k === -1) continue;
+
+    const srcId = p.tag.match(/paraPrIDRef="(\d+)"/)?.[1];
+    const src = srcId ? paraBlocks.get(srcId) : undefined;
+    if (!srcId || !src) continue;
+
+    const { color, widthMm = "0.25 mm" } = pending[k];
+    pending.splice(k, 1); // 같은 문단을 두 번 쓰지 않는다
+
+    const fillKey = `${color}|${widthMm}`;
+    let fillId = fillIds.get(fillKey);
+    if (!fillId) {
+      fillId = String(++maxFillId);
+      newFills.push(
+        template
+          .replace(/^<hh:borderFill id="\d+"/, `<hh:borderFill id="${fillId}"`)
+          .replace(
+            /<hh:bottomBorder type="NONE" width="[^"]*" color="[^"]*"\/>/,
+            `<hh:bottomBorder type="SOLID" width="${widthMm}" color="${color}"/>`
+          )
+      );
+      fillIds.set(fillKey, fillId);
+    }
+
+    const paraKey = `${srcId}|${fillId}`;
+    let newId = paraIds.get(paraKey);
+    if (!newId) {
+      newId = String(++maxParaId);
+      newParas.push(
+        src
+          .replace(/^<hh:paraPr id="\d+"/, `<hh:paraPr id="${newId}"`)
+          .replace(
+            /<\/hh:paraPr>$/,
+            `<hh:border borderFillIDRef="${fillId}" offsetLeft="0" offsetRight="0"` +
+              ` offsetTop="0" offsetBottom="0" connect="0" ignoreMargin="0"/></hh:paraPr>`
+          )
+      );
+      paraIds.set(paraKey, newId);
+    }
+
+    edits.push({
+      at: p.at,
+      len: p.len,
+      tag: p.tag.replace(/paraPrIDRef="\d+"/, `paraPrIDRef="${newId}"`),
+    });
+  }
+
+  if (newParas.length === 0) return unchanged;
+
+  const header = headerXml
+    .replace(
+      fillsOpen[0],
+      `<hh:borderFills itemCnt="${Number(fillsOpen[1]) + newFills.length}">`
+    )
+    .replace("</hh:borderFills>", newFills.join("") + "</hh:borderFills>")
+    .replace(
+      paraOpen[0],
+      `<hh:paraProperties itemCnt="${Number(paraOpen[1]) + newParas.length}">`
+    )
+    .replace("</hh:paraProperties>", newParas.join("") + "</hh:paraProperties>");
+
+  return { header, section: spliceAll(sectionXml, edits) };
+}
+
+/**
+ * 문단 여백을 HWPX에 입힌다.
+ * 엔진은 같은 서식의 문단들을 paraPr 하나로 합쳐 쓰기 때문에, 그 paraPr을 그냥 고치면
+ * 관계없는 문단까지 같이 밀린다. 그래서 필요한 조합만 paraPr을 복제해 새 id를 주고
+ * 해당 문단만 그 id를 가리키게 바꾼다.
+ */
+export function applyParaMargins(
+  headerXml: string,
+  sectionXml: string,
+  margins: ParaMargin[]
+): { header: string; section: string } {
+  const unchanged = { header: headerXml, section: sectionXml };
+  if (margins.length === 0) return unchanged;
+
+  const container = headerXml.match(/<hh:paraProperties itemCnt="(\d+)">/);
+  if (!container) return unchanged;
+
+  const blocks = new Map<string, string>();
+  let maxId = -1;
+  for (const m of headerXml.matchAll(/<hh:paraPr id="(\d+)"[\s\S]*?<\/hh:paraPr>/g)) {
+    blocks.set(m[1], m[0]);
+    maxId = Math.max(maxId, Number(m[1]));
+  }
+  if (blocks.size === 0) return unchanged;
+
+  const pending = [...margins];
+  const clones: string[] = [];
+  const cloneIds = new Map<string, string>(); // 원본id|위|아래 → 새 id
+  const edits: { at: number; len: number; tag: string }[] = [];
+
+  for (const p of sectionParagraphs(sectionXml)) {
+    const text = p.text;
+    if (!text) continue;
+
+    const srcId = p.tag.match(/paraPrIDRef="(\d+)"/)?.[1];
+    if (!srcId) continue;
+
+    const k = pending.findIndex((x) => x.text === text);
+    if (k === -1) continue;
+    const { prev, next } = pending[k];
+    pending.splice(k, 1); // 같은 문단을 두 번 쓰지 않는다
+
+    const key = `${srcId}|${prev}|${next}`;
+    let newId = cloneIds.get(key);
+    if (!newId) {
+      const src = blocks.get(srcId);
+      if (!src) continue;
+      newId = String(++maxId);
+      clones.push(
+        src
+          .replace(/^<hh:paraPr id="\d+"/, `<hh:paraPr id="${newId}"`)
+          .replace(/<hh:prev value="\d+"\/>/, `<hh:prev value="${prev}"/>`)
+          .replace(/<hh:next value="\d+"\/>/, `<hh:next value="${next}"/>`)
+      );
+      cloneIds.set(key, newId);
+    }
+    edits.push({
+      at: p.at,
+      len: p.len,
+      tag: p.tag.replace(/paraPrIDRef="\d+"/, `paraPrIDRef="${newId}"`),
+    });
+  }
+
+  if (clones.length === 0) return unchanged;
+
+  const section = spliceAll(sectionXml, edits);
+
+  const header = headerXml
+    .replace(
+      container[0],
+      `<hh:paraProperties itemCnt="${Number(container[1]) + clones.length}">`
+    )
+    .replace("</hh:paraProperties>", clones.join("") + "</hh:paraProperties>");
+
+  return { header, section };
 }
 
 // docx의 표별 열 너비(w:tblGrid/gridCol)를 추출한다.
@@ -280,31 +640,54 @@ export async function postProcessHwpx(
     grids?: number[][];
     gridByCols?: Record<number, number[]>;
     landscape?: boolean;
+    paraMargins?: ParaMargin[];
+    pageBreakTexts?: string[];
+    paraBorders?: ParaBorder[];
   } = {}
 ): Promise<Uint8Array> {
-  const { grids, gridByCols, landscape } = options;
+  const {
+    grids,
+    gridByCols,
+    landscape,
+    paraMargins,
+    pageBreakTexts,
+    paraBorders,
+  } = options;
   try {
     const JSZip = (await import("jszip")).default;
     const zip = await JSZip.loadAsync(bytes);
 
     const headerFile = zip.file("Contents/header.xml");
-    if (headerFile) {
-      zip.file(
-        "Contents/header.xml",
-        setDefaultAlignLeft(await headerFile.async("string"))
-      );
-    }
-
     const sectionFile = zip.file("Contents/section0.xml");
-    if (sectionFile) {
-      let section = await sectionFile.async("string");
+    let header = headerFile ? await headerFile.async("string") : null;
+    let section = sectionFile ? await sectionFile.async("string") : null;
+
+    if (header) header = setDefaultAlignLeft(header);
+
+    if (section) {
       if (grids && grids.some((g) => g.length > 1)) {
         section = applyColumnWidths(section, grids);
       }
       if (gridByCols) section = applyColumnWidthsByColCount(section, gridByCols);
       if (landscape) section = setPageLandscape(section);
-      zip.file("Contents/section0.xml", section);
+      if (pageBreakTexts) section = applyPageBreaks(section, pageBreakTexts);
     }
+
+    // 아래 둘은 header(스타일)와 section(참조)을 함께 고쳐야 해서 마지막에 처리한다.
+    // 구분선이 여백보다 뒤에 와야 여백이 들어간 스타일을 그대로 물려받는다.
+    if (header && section && paraMargins && paraMargins.length > 0) {
+      const applied = applyParaMargins(header, section, paraMargins);
+      header = applied.header;
+      section = applied.section;
+    }
+    if (header && section && paraBorders && paraBorders.length > 0) {
+      const applied = applyParaBorders(header, section, paraBorders);
+      header = applied.header;
+      section = applied.section;
+    }
+
+    if (header) zip.file("Contents/header.xml", header);
+    if (section) zip.file("Contents/section0.xml", section);
 
     // mimetype은 규격상 무압축이어야 한다
     zip.file("mimetype", "application/hwp+zip", { compression: "STORE" });
@@ -365,8 +748,19 @@ export function prepareHtmlForHwpx(
   return `<html><body>${out}</body></html>`;
 }
 
+// 체험판 표시줄. 문서 맨 앞에 눈에 띄게 한 줄 넣는다.
+// 변환 엔진을 그대로 태우므로 후처리가 필요 없다.
+export function bannerHtml(text: string): string {
+  const safe = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return `<p style="color:#B91C1C;font-size:10pt;line-height:1.3"><strong>${safe}</strong></p>`;
+}
+
 export async function convertDocxToHwpx(
-  file: File
+  file: File,
+  options: { banner?: string } = {}
 ): Promise<{ blob: Blob; warnings: string[] }> {
   const mammoth = await import("mammoth");
   const arrayBuffer = await file.arrayBuffer();
@@ -376,6 +770,8 @@ export async function convertDocxToHwpx(
   let cellStyles: CellStyle[][][] = [];
   let grids: number[][] = [];
   let bodyAligns: BodyAlign[] = [];
+  let paraMargins: ParaMargin[] = [];
+  let pageBreakTexts: string[] = [];
   try {
     const zip = await JSZip.loadAsync(arrayBuffer);
     const docXml = await zip.file("word/document.xml")?.async("string");
@@ -383,6 +779,8 @@ export async function convertDocxToHwpx(
       cellStyles = extractTableCellStyles(docXml);
       grids = extractTableGrids(docXml);
       bodyAligns = extractBodyAligns(docXml);
+      paraMargins = extractParaMargins(docXml);
+      pageBreakTexts = extractPageBreakTexts(docXml);
     }
   } catch {
     // 추출 실패해도 변환 자체는 계속 진행
@@ -390,7 +788,10 @@ export async function convertDocxToHwpx(
 
   // 이미지는 data URI로 인라인 → hwp-convert가 BinData로 패키징
   const result = await mammoth.convertToHtml({ arrayBuffer });
-  const html = prepareHtmlForHwpx(result.value, cellStyles, bodyAligns);
+  let html = prepareHtmlForHwpx(result.value, cellStyles, bodyAligns);
+  if (options.banner) {
+    html = html.replace("<body>", `<body>${bannerHtml(options.banner)}`);
+  }
 
   const { htmlToHwpx } = await import("hwp-convert");
   const title = file.name.replace(/\.docx$/i, "");
@@ -399,8 +800,12 @@ export async function convertDocxToHwpx(
     creator: "PlanLedger",
   });
 
-  // 후처리: 원본 열 너비 비율 반영 + 기본 문단 왼쪽 정렬
-  const bytes = await postProcessHwpx(raw, { grids });
+  // 후처리: 원본 열 너비 비율 반영 + 기본 문단 왼쪽 정렬 + 문단 여백 + 페이지 나눔
+  const bytes = await postProcessHwpx(raw, {
+    grids,
+    paraMargins,
+    pageBreakTexts,
+  });
 
   return {
     blob: new Blob([new Uint8Array(bytes)], { type: "application/hwp+zip" }),

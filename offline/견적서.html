@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>견적서</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #f1f5f9; color: #111827;
+    font-family: "맑은 고딕", "Malgun Gothic", system-ui, sans-serif;
+    font-size: 13px;
+  }
+  .bar {
+    background: #0f172a; color: #cbd5e1; padding: 12px 20px; font-size: 13px;
+    line-height: 1.7;
+  }
+  .bar b { color: #fff; }
+  .bar button {
+    float: right; margin-left: 8px; padding: 7px 16px; border: 0; border-radius: 6px;
+    background: #059669; color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .bar button:hover { background: #047857; }
+
+  .paper {
+    width: 190mm; min-height: 260mm; margin: 20px auto; padding: 18mm 16mm;
+    background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.12);
+  }
+  h1 {
+    margin: 0 0 4px; font-size: 30px; letter-spacing: 14px; text-align: center;
+    font-weight: 700;
+  }
+  .sub { margin: 0 0 22px; text-align: center; color: #6b7280; font-size: 12px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  .meta td { padding: 7px 10px; border: 1px solid #cbd5e1; vertical-align: middle; }
+  .meta .lbl {
+    background: #f1f5f9; width: 92px; font-weight: 600; color: #334155;
+    white-space: nowrap; /* "사업자번호"가 두 줄로 잘리지 않게 */
+  }
+  .two { display: flex; gap: 12px; }
+  .two > div { flex: 1; }
+  .cap { margin: 0 0 6px; font-weight: 700; color: #334155; font-size: 12px; }
+
+  .items { margin-top: 20px; }
+  .items th, .items td { border: 1px solid #cbd5e1; padding: 9px 10px; }
+  .items th { background: #0f172a; color: #fff; font-weight: 600; font-size: 12px; }
+  .items td.num { text-align: right; }
+  .items td.ctr { text-align: center; }
+  .items tr.discount td { color: #b91c1c; }
+  .items tr.total td {
+    background: #f8fafc; font-weight: 700; font-size: 15px; border-top: 2px solid #0f172a;
+  }
+  .note {
+    margin-top: 18px; border: 1px solid #cbd5e1; padding: 12px 14px;
+    font-size: 12px; line-height: 2; color: #374151;
+  }
+  .note b { color: #111827; }
+  .sign { margin-top: 26px; text-align: right; font-size: 14px; line-height: 2; }
+  .sign .name { font-size: 17px; font-weight: 700; letter-spacing: 2px; }
+
+  [contenteditable] { outline: none; }
+  [contenteditable]:focus { background: #fef9c3; }
+  [contenteditable]:empty::before { content: attr(data-ph); color: #cbd5e1; }
+  .fill { background: #fffbeb; }
+
+  /* 인쇄 규격은 최상위에 둬야 브라우저가 확실히 적용한다 */
+  @page { size: A4; margin: 16mm; }
+
+  @media print {
+    body { background: #fff; }
+    .bar { display: none; }
+    .paper { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; }
+    .fill { background: transparent; }
+    [contenteditable]:empty::before { content: ""; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button onclick="window.print()">인쇄 / PDF 저장</button>
+  <b>사용법</b> — 노란 칸을 눌러 직접 고쳐 쓰고, 오른쪽 버튼으로 인쇄하거나 PDF로 저장하세요.
+  «대상»에서 «PDF로 저장»을 고르면 됩니다. 저장은 되지 않으니 매번 채워 쓰거나 사본을 만들어 쓰세요.
+</div>
+
+<div class="paper">
+  <h1>견적서</h1>
+  <p class="sub">아래와 같이 견적합니다.</p>
+
+  <div class="two">
+    <div>
+      <p class="cap">공급받는 자</p>
+      <table class="meta">
+        <tr><td class="lbl">기관명</td><td class="fill" contenteditable data-ph="○○ 사회적협동조합"></td></tr>
+        <tr><td class="lbl">담당자</td><td class="fill" contenteditable data-ph="홍길동 팀장"></td></tr>
+        <tr><td class="lbl">연락처</td><td class="fill" contenteditable data-ph="02-000-0000"></td></tr>
+        <tr><td class="lbl">견적일</td><td class="fill" contenteditable data-ph="2026년 8월 15일"></td></tr>
+      </table>
+    </div>
+    <div>
+      <p class="cap">공급자</p>
+      <table class="meta">
+        <tr><td class="lbl">상호</td><td class="fill" contenteditable data-ph="상호를 적으세요"></td></tr>
+        <tr><td class="lbl">사업자번호</td><td class="fill" contenteditable data-ph="000-00-00000"></td></tr>
+        <tr><td class="lbl">대표</td><td contenteditable>박기용</td></tr>
+        <tr><td class="lbl">연락처</td><td contenteditable>kiyong0263@naver.com</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <table class="items">
+    <tr>
+      <th style="width:46%">품목</th>
+      <th style="width:12%">수량</th>
+      <th style="width:21%">단가</th>
+      <th style="width:21%">금액</th>
+    </tr>
+    <tr>
+      <td contenteditable>한글(HWPX) 문서 변환 프로그램<br />
+        <span style="color:#6b7280;font-size:12px">기관 내부 설치판 · 영구 사용권</span></td>
+      <td class="ctr fill" contenteditable data-ph="1식"></td>
+      <td class="num fill" contenteditable data-ph="150,000"></td>
+      <td class="num fill" contenteditable data-ph="150,000"></td>
+    </tr>
+    <tr class="discount">
+      <td contenteditable>초기 도입 기관 할인</td>
+      <td class="ctr"></td>
+      <td class="num"></td>
+      <td class="num fill" contenteditable data-ph="-51,000"></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="text-align:right;font-weight:600">공급가액</td>
+      <td class="num fill" contenteditable data-ph="99,000"></td>
+    </tr>
+    <tr>
+      <td colspan="3" style="text-align:right;font-weight:600">부가세 (10%)</td>
+      <td class="num fill" contenteditable data-ph="9,900"></td>
+    </tr>
+    <tr class="total">
+      <td colspan="3" style="text-align:right">합계 금액</td>
+      <td class="num fill" contenteditable data-ph="108,900"></td>
+    </tr>
+  </table>
+
+  <div class="note">
+    <b>공급 내용</b><br />
+    · 워드(.docx) 문서를 한글(.hwpx)로 변환하는 프로그램 1식<br />
+    · 표 구조·셀 병합·배경색·글자 크기·줄간격·문단 여백·페이지 나눔을 유지합니다.<br />
+    · 여러 파일을 한 번에 변환하고 결과를 zip 하나로 저장합니다.<br /><br />
+
+    <b>설치 및 보안</b><br />
+    · 파일 하나를 실행하는 방식으로, 별도 설치나 관리자 권한이 필요 없습니다.<br />
+    · <b>인터넷 연결 없이 해당 컴퓨터 안에서만 처리되며 문서가 외부로 전송되지 않습니다.</b>
+      네트워크가 차단된 환경에서도 동일하게 동작합니다.<br /><br />
+
+    <b>거래 조건</b><br />
+    · 견적 유효기간: 견적일로부터 <span contenteditable>30</span>일<br />
+    · 납품: 대금 입금 확인 후 <span contenteditable>3</span>일 이내 파일 전달<br />
+    · 결제: 계좌이체 · 전자세금계산서 발행<br />
+    · 하자 대응: 납품일로부터 <span contenteditable>1</span>년간 변환 오류 무상 수정
+  </div>
+
+  <div class="sign">
+    <span class="name" contenteditable>박기용</span> (인)
+  </div>
+</div>
+
+</body>
+</html>

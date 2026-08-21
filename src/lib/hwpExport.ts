@@ -1,4 +1,4 @@
-import { postProcessHwpx } from "./docxToHwpx";
+import { postProcessHwpx, ParaMargin, ParaBorder } from "./docxToHwpx";
 import { BusinessPlanContent, formatMoney, PlanImage } from "./types";
 
 const IMG_PREFIX = "app-image://";
@@ -23,16 +23,24 @@ const FS_TH = "10pt"; // 표 머리글
 const FS_TD = "9.5pt"; // 표 데이터
 const LINE = "1.25"; // 본문 줄 간격 (Word의 line:300 = 1.25줄)
 
+// 문단 여백 (HWPUNIT, 1pt = 100). 변환 엔진이 CSS margin을 버려서 후처리로 넣는다.
+const GAP_AFTER_TITLE = 600; // 문서 제목 아래
+const GAP_BEFORE_HEADING = 900; // 섹션 제목 위 (섹션 사이가 벌어진다)
+const GAP_AFTER_HEADING = 300; // 섹션 제목 아래
+
 // 색상이 있는 셀은 테두리 CSS를 명시하지 않으면 선이 사라진다.
 // 그래서 모든 셀(머리글·데이터)에 회색 격자선을 직접 넣어준다.
 const CB = `border:1px solid ${BORDER};`;
 const TABLE_OPEN = `<table style="border:1px solid ${BORDER}">`;
 const TH = `${CB}background-color:${GREEN};color:#FFFFFF;text-align:center;font-size:${FS_TH}`;
-const TD = `${CB}font-size:${FS_TD}`;
+// 뒤에 배경색·정렬 등을 이어 붙여 쓰므로 반드시 세미콜론으로 끝나야 한다.
+// (없으면 "font-size:9.5ptbackground-color:..." 로 붙어 두 속성이 같이 죽는다)
+const TD = `${CB}font-size:${FS_TD};`;
 
 // 변환 엔진이 표의 열 너비를 무시하고 균등 분할하므로,
 // Word 내보내기와 같은 비율을 나중에 결과 파일에 직접 넣어준다.
-const TIME_COL = 1400;
+// "09:00-09:30"(11글자, 굵게)이 한 줄에 들어가야 한다. 1400에서는 잘려 두 줄이 됐다.
+const TIME_COL = 1800;
 const CONTENT_WIDTH = 9026; // A4 - 기본 여백, Word 내보내기와 동일
 const BUDGET_COLS = [2200, 2900, 1500, 2426]; // 프로그램명/산출 내역/금액/비고
 
@@ -46,8 +54,9 @@ function esc(text: string): string {
 // 변환 엔진은 <h1>·<h2>의 글자 크기를 18pt·16pt로 고정하고 inline 지정을 무시한다.
 // (개요 수준도 부여하지 않으므로 <h2>를 쓸 이유가 없다)
 // 그래서 문단으로 만들고 Word 내보내기와 같은 크기를 직접 지정한다.
+// 아래 구분선은 CSS로 안 나간다(엔진이 문단 테두리를 버림) → paraBorders로 결과 파일에 직접 넣는다.
 function heading(text: string): string {
-  return `<p style="color:${GREEN};font-size:${FS_HEADING};line-height:1.6;border-bottom:1px solid ${GOLD};padding-bottom:3pt"><strong>${esc(
+  return `<p style="color:${GREEN};font-size:${FS_HEADING};line-height:1.6"><strong>${esc(
     text
   )}</strong></p>`;
 }
@@ -195,22 +204,45 @@ async function imagesHtmlAndResolver(images: PlanImage[]): Promise<{
   return { html, resolver };
 }
 
-export async function exportBusinessPlanToHwpx(
+/**
+ * 기획안 HTML과 후처리에 필요한 값들을 만든다.
+ * (내보내기 함수는 브라우저 전용이라 이 부분만 떼어 두면 node에서 점검할 수 있다)
+ */
+export function buildPlanHtml(
   title: string,
-  content: BusinessPlanContent
-) {
+  content: BusinessPlanContent,
+  imagesHtml = ""
+): {
+  html: string;
+  grids: number[][];
+  paraMargins: ParaMargin[];
+  paraBorders: ParaBorder[];
+} {
   const planTypeLabel =
     content.planType === "internal" ? "내부 기획안" : "외부 기획안";
   const today = new Date();
   const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
 
+  // 변환 엔진이 CSS margin을 버리므로 문단 여백은 결과 파일에 직접 넣는다.
+  // 글자로 문단을 찾는 방식이라, 여기서 만든 글자와 아래 HTML의 글자가 같아야 한다.
+  const paraMargins: ParaMargin[] = [];
+  const paraBorders: ParaBorder[] = [];
+  const gap = (text: string, prev: number, next: number) => {
+    if (text.trim()) paraMargins.push({ text: text.trim(), prev, next });
+  };
+  // 섹션 제목: 위아래 여백 + 금색 구분선
+  const headingMeta = (text: string) => {
+    gap(text, GAP_BEFORE_HEADING, GAP_AFTER_HEADING);
+    if (text.trim()) paraBorders.push({ text: text.trim(), color: GOLD });
+  };
+
   let sectionNumber = 0;
   const sectionsHtml = content.sections
     .map((section) => {
       sectionNumber += 1;
-      return `${heading(`${sectionNumber}. ${section.title || "제목 없음"}`)}${paragraphsHtml(
-        section.body
-      )}`;
+      const headText = `${sectionNumber}. ${section.title || "제목 없음"}`;
+      headingMeta(headText);
+      return `${heading(headText)}${paragraphsHtml(section.body)}`;
     })
     .join("");
 
@@ -219,39 +251,43 @@ export async function exportBusinessPlanToHwpx(
   let timetableSection = "";
   if (hasTimetable) {
     sectionNumber += 1;
-    timetableSection = `${heading(`${sectionNumber}. 일정표`)}${timetableHtml(content)}`;
+    const headText = `${sectionNumber}. 일정표`;
+    headingMeta(headText);
+    timetableSection = `${heading(headText)}${timetableHtml(content)}`;
   }
 
   sectionNumber += 1;
-  const budgetSection = `${heading(`${sectionNumber}. 예산안`)}${budgetHtml(content)}`;
-
-  const { html: imagesHtml, resolver } = content.images?.length
-    ? await imagesHtmlAndResolver(content.images)
-    : { html: "", resolver: () => null };
+  const budgetHead = `${sectionNumber}. 예산안`;
+  headingMeta(budgetHead);
+  const budgetSection = `${heading(budgetHead)}${budgetHtml(content)}`;
 
   let imagesSection = "";
-  if (content.images?.length && imagesHtml) {
+  if (imagesHtml) {
     sectionNumber += 1;
-    imagesSection = `${heading(`${sectionNumber}. 사진 첨부`)}${imagesHtml}`;
+    const headText = `${sectionNumber}. 사진 첨부`;
+    headingMeta(headText);
+    imagesSection = `${heading(headText)}${imagesHtml}`;
   }
 
+  const titleText = title || "기획안";
+  gap(titleText, 0, GAP_AFTER_TITLE);
+
+  // 제목 아래 유형·날짜 줄에는 조금 굵은 초록 구분선을 깐다.
+  // 글자로 문단을 찾으므로 아래 HTML에서 태그를 걷어낸 결과와 같아야 한다.
+  const subLine = `${planTypeLabel} · ${dateStr}`;
+  paraBorders.push({ text: subLine, color: GREEN, widthMm: "0.4 mm" });
+  gap(subLine, 0, GAP_AFTER_TITLE);
+
   const html = `<html><body>
-<p style="color:${GREEN};font-size:${FS_TITLE};line-height:1.3"><strong>${esc(title || "기획안")}</strong></p>
-<p style="color:${GOLD};font-size:${FS_SUB};border-bottom:1.5px solid ${GREEN};padding-bottom:4pt"><strong>${esc(planTypeLabel)}</strong> · <span style="color:${GRAY}">${esc(dateStr)}</span></p>
+<p style="color:${GREEN};font-size:${FS_TITLE};line-height:1.3"><strong>${esc(titleText)}</strong></p>
+<p style="color:${GOLD};font-size:${FS_SUB}"><strong>${esc(planTypeLabel)}</strong> · <span style="color:${GRAY}">${esc(dateStr)}</span></p>
 ${sectionsHtml}
 ${timetableSection}
 ${budgetSection}
 ${imagesSection}
 </body></html>`;
 
-  const { htmlToHwpx } = await import("hwp-convert");
-  const raw: Uint8Array = await htmlToHwpx(html, {
-    title: title || "기획안",
-    creator: "기획안 관리",
-    imageResolver: resolver,
-  });
-
-  // 표가 나오는 순서대로 열 너비 비율을 모아 결과 파일에 반영한다.
+  // 표가 나오는 순서대로 열 너비 비율을 모은다.
   const grids: number[][] = [];
   if (hasTimetable) {
     const dayW = Math.floor(
@@ -261,7 +297,31 @@ ${imagesSection}
   }
   if (content.budget?.items?.length) grids.push(BUDGET_COLS);
 
-  const bytes = await postProcessHwpx(raw, { grids });
+  return { html, grids, paraMargins, paraBorders };
+}
+
+export async function exportBusinessPlanToHwpx(
+  title: string,
+  content: BusinessPlanContent
+) {
+  const { html: imagesHtml, resolver } = content.images?.length
+    ? await imagesHtmlAndResolver(content.images)
+    : { html: "", resolver: () => null };
+
+  const { html, grids, paraMargins, paraBorders } = buildPlanHtml(
+    title,
+    content,
+    imagesHtml
+  );
+
+  const { htmlToHwpx } = await import("hwp-convert");
+  const raw: Uint8Array = await htmlToHwpx(html, {
+    title: title || "기획안",
+    creator: "기획안 관리",
+    imageResolver: resolver,
+  });
+
+  const bytes = await postProcessHwpx(raw, { grids, paraMargins, paraBorders });
 
   const blob = new Blob([new Uint8Array(bytes)], {
     type: "application/hwp+zip",

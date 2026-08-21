@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>한글(HWPX) 변환기 — 오프라인판</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #f8fafc; color: #0f172a;
+    font-family: "맑은 고딕", "Malgun Gothic", system-ui, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 40px 20px 60px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .sub { color: #64748b; font-size: 14px; margin: 0 0 8px; }
+  .badge {
+    display: inline-block; background: #ecfdf5; color: #047857;
+    border: 1px solid #a7f3d0; border-radius: 999px;
+    padding: 4px 12px; font-size: 12px; margin-bottom: 24px;
+  }
+  #drop {
+    background: #fff; border: 2px dashed #cbd5e1; border-radius: 12px;
+    padding: 44px 20px; text-align: center; cursor: pointer;
+    color: #64748b; font-size: 14px;
+  }
+  #drop:hover, #drop.over { border-color: #059669; color: #047857; background: #f0fdf4; }
+  #drop .icon { font-size: 30px; display: block; margin-bottom: 8px; }
+  #count { display: block; font-weight: 600; color: #0f172a; margin-top: 6px; }
+  #names { display: block; font-size: 12px; color: #94a3b8; margin-top: 4px;
+           word-break: break-all; }
+  button {
+    width: 100%; margin-top: 16px; padding: 14px; border: 0; border-radius: 8px;
+    background: #059669; color: #fff; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  button:hover:not(:disabled) { background: #047857; }
+  button:disabled { background: #cbd5e1; cursor: not-allowed; }
+  #summary { margin-top: 14px; font-size: 14px; font-weight: 600; color: #047857; }
+  .row {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 10px 14px; margin-top: 8px; font-size: 13px; word-break: break-all;
+  }
+  .row.ok { border-color: #a7f3d0; }
+  .row.fail { border-color: #fecaca; color: #b91c1c; }
+  .note {
+    margin-top: 28px; background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 8px; padding: 14px 16px; font-size: 12px; color: #64748b;
+    line-height: 1.7;
+  }
+  .note b { color: #334155; }
+
+  /* 체험판 전용 */
+  #trial {
+    display: block; margin-bottom: 14px; padding: 10px 14px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    background: #fffbeb; border: 1px solid #fcd34d; color: #92400e;
+  }
+  #trial.done { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+  #drop.locked { cursor: not-allowed; opacity: .5; }
+  #drop.locked:hover { border-color: #cbd5e1; color: #64748b; background: #fff; }
+  #buy {
+    margin-top: 20px; background: #fff; border: 2px solid #059669;
+    border-radius: 12px; padding: 20px;
+  }
+  #buy h2 { margin: 0 0 8px; font-size: 17px; color: #047857; }
+  #buy .lead { margin: 0 0 12px; font-size: 14px; line-height: 1.7; color: #334155; }
+  #buy ul { margin: 0 0 14px; padding-left: 18px; font-size: 14px; line-height: 1.9; color: #334155; }
+  #buy .price {
+    margin: 0 0 12px; padding: 11px 14px; background: #ecfdf5;
+    border: 1px solid #a7f3d0; border-radius: 8px;
+    font-size: 14px; font-weight: 600; color: #047857; line-height: 1.6;
+  }
+  #buy .who {
+    margin: 0 0 14px; padding: 12px 14px; background: #f8fafc;
+    border-radius: 8px; font-size: 14px; line-height: 1.7; color: #0f172a;
+  }
+  #buy .cta {
+    display: block; padding: 13px; border-radius: 8px; background: #059669;
+    color: #fff; text-align: center; text-decoration: none;
+    font-size: 15px; font-weight: 600;
+  }
+  #buy .cta:hover { background: #047857; }
+  #buy .ghost {
+    margin-top: 8px; background: #fff; color: #334155;
+    border: 1px solid #cbd5e1; font-weight: 500; font-size: 13px; padding: 10px;
+  }
+  #buy .ghost:hover { background: #f1f5f9; }
+  #buy .copied { display: block; margin-top: 6px; font-size: 12px; color: #047857; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>한글(HWPX) 변환기</h1>
+  <p class="sub">워드(.docx) 문서를 한글 문서로 바꿉니다. 표·병합·색상·정렬을 유지합니다.</p>
+  <span class="badge">🔒 인터넷 연결 없이 이 컴퓨터 안에서만 처리됩니다</span>
+
+  <div id="trial" hidden></div>
+
+  <div id="drop">
+    <span class="icon">📄</span>
+    <span id="dropHint">워드 파일(.docx)을 끌어다 놓거나 눌러서 선택하세요 · 여러 개 가능</span>
+    <span id="count"></span>
+    <span id="names"></span>
+  </div>
+  <input id="picker" type="file" accept=".docx" multiple hidden />
+
+  <button id="run" disabled>변환하기</button>
+  <div id="summary"></div>
+  <div id="results"></div>
+
+  <div id="buy" hidden></div>
+
+  <div class="note" id="paidNote" hidden>
+    <b>체험판입니다</b><br />
+    변환 횟수 제한은 없습니다. 서식 변환 품질도 정식판과 완전히 같습니다.<br />
+    다만 변환된 문서 맨 앞에 <b>체험판 표시 한 줄</b>이 들어갑니다. 그대로 제출·보고에 쓰기 어려우니,
+    실제 업무에 쓰실 때는 아래로 문의해 주세요.
+  </div>
+
+  <div class="note">
+    <b>사용 방법</b><br />
+    이 파일을 더블클릭하면 바로 열립니다. 설치·회원가입·인터넷 연결이 필요 없습니다.<br /><br />
+    <b>저장 위치</b><br />
+    변환된 파일은 브라우저의 «다운로드» 폴더에 저장됩니다.
+    파일이 1개면 .hwpx 로, 2개 이상이면 .zip 하나로 묶여 저장됩니다.<br /><br />
+    <b>보안</b><br />
+    문서가 외부로 전송되지 않습니다. 네트워크가 차단된 환경에서도 동일하게 동작합니다.
+  </div>
+</main>
+<script>/*BUNDLE*/</script>
+</body>
+</html>
