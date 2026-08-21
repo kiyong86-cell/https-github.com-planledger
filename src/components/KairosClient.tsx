@@ -27,6 +27,7 @@ import {
   SLOTS,
   START_HOUR,
   sumDay,
+  weekLabel,
   WeekData,
 } from "@/lib/kairos";
 import {
@@ -242,6 +243,12 @@ export default function KairosClient({
             <h1 className="text-xl font-semibold text-slate-900">
               {t("kairos.title")}
             </h1>
+            <p className="mt-1 text-base font-medium text-slate-700">
+              {weekLabel(week, true)}{" "}
+              <span className="text-sm font-normal text-slate-400">
+                {dayDate(week, 0)} ~ {dayDate(week, 5)}
+              </span>
+            </p>
             <p className="mt-1 text-sm text-slate-500">{t("kairos.intro")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -716,7 +723,8 @@ export default function KairosClient({
                   <thead>
                     <tr className="bg-slate-50 text-xs text-slate-500">
                       <th className="w-28 border px-2 py-1 text-left">과목</th>
-                      <th className="w-16 border px-1 py-1">주간 시간</th>
+                      <th className="w-16 border px-1 py-1">계획</th>
+                      <th className="w-16 border px-1 py-1">실행</th>
                       {DAYS.map((d) => (
                         <th key={d} className="border px-1 py-1">
                           {DAY_KO[d]}
@@ -726,7 +734,11 @@ export default function KairosClient({
                   </thead>
                   <tbody>
                     {usedSubjects.map((c) => {
-                      const hours = DAYS.reduce(
+                      const planHoursForCat = DAYS.reduce(
+                        (sum, d) => sum + planTotals[d][c.key],
+                        0
+                      );
+                      const actHoursForCat = DAYS.reduce(
                         (sum, d) => sum + actTotals[d][c.key],
                         0
                       );
@@ -738,8 +750,11 @@ export default function KairosClient({
                             />
                             {catName(c)}
                           </td>
-                          <td className="border px-1 py-1 text-center text-xs text-slate-400">
-                            {fmt(hours)}h
+                          <td className="border px-1 py-1 text-center text-xs text-slate-500">
+                            {planHoursForCat ? fmt(planHoursForCat) + "h" : "-"}
+                          </td>
+                          <td className="border px-1 py-1 text-center text-xs font-medium text-slate-700">
+                            {actHoursForCat ? fmt(actHoursForCat) + "h" : "-"}
                           </td>
                           {DAYS.map((d) => (
                             <td key={d} className="border p-0">

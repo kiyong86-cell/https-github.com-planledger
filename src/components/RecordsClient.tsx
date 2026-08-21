@@ -15,6 +15,7 @@ import {
   displayTotals,
   fmt,
   SUBJECT_CATS,
+  weekLabel,
 } from "@/lib/kairos";
 
 export default function RecordsClient({
@@ -128,8 +129,9 @@ export default function RecordsClient({
             {records.map((r) => {
               const open = openWeek === r.week;
               const act = displayTotals(r.data, "act");
+              const plan = displayTotals(r.data, "plan");
               const usedSubjects = SUBJECT_CATS.filter((c) =>
-                DAYS.some((d) => act[d][c.key] > 0)
+                DAYS.some((d) => act[d][c.key] > 0 || plan[d][c.key] > 0)
               );
               return (
                 <li key={r.week} className="rounded-lg border bg-white">
@@ -139,7 +141,7 @@ export default function RecordsClient({
                   >
                     <span>
                       <span className="font-medium text-slate-900">
-                        {r.week}
+                        {weekLabel(r.week, true)}
                       </span>
                       <span className="ml-2 text-xs text-slate-400">
                         {dayDate(r.week, 0)} ~ {dayDate(r.week, 5)}
@@ -210,6 +212,23 @@ export default function RecordsClient({
                                       style={{ background: c.color }}
                                     />
                                     <b>{c.ko}</b>{" "}
+                                    <span className="text-slate-400">
+                                      (계획{" "}
+                                      {fmt(
+                                        DAYS.reduce(
+                                          (sum, d) => sum + plan[d][c.key],
+                                          0
+                                        )
+                                      )}
+                                      h · 실행{" "}
+                                      {fmt(
+                                        DAYS.reduce(
+                                          (sum, d) => sum + act[d][c.key],
+                                          0
+                                        )
+                                      )}
+                                      h)
+                                    </span>{" "}
                                     {notes.length ? notes.join(" / ") : "—"}
                                   </li>
                                 );

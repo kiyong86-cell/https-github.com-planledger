@@ -15,6 +15,8 @@ import {
   SLOTS,
   START_HOUR,
   sumDay,
+  weekFileLabel,
+  weekLabel,
   WeekData,
 } from "./kairos";
 
@@ -129,17 +131,24 @@ function progressTable(data: WeekData): string {
   let h = `<p style="font-size:11pt;margin:10pt 0 3pt 0"><strong>과목별 완성 분량</strong></p>
 <table style="border-collapse:collapse;width:100%"><tr>
 <td style="${head("width:70px")}">과목</td>
-<td style="${head("width:44px")}">주간</td>`;
+<td style="${head("width:40px")}">계획</td>
+<td style="${head("width:40px")}">실행</td>`;
   DAYS.forEach((d) => {
     h += `<td style="${head()}">${DAY_KO[d]}</td>`;
   });
   h += "</tr>";
 
   rows.forEach((c) => {
-    const hours = DAYS.reduce((s, d) => s + act[d][c.key], 0);
+    const planHours = DAYS.reduce((s, d) => s + plan[d][c.key], 0);
+    const actHours = DAYS.reduce((s, d) => s + act[d][c.key], 0);
     h += `<tr>
 <td style="${cell("font-size:9pt")}">${c.ko}</td>
-<td style="${cell("text-align:center;font-size:8.5pt")}">${fmt(hours)}h</td>`;
+<td style="${cell("text-align:center;font-size:8.5pt")}">${
+      planHours ? fmt(planHours) + "h" : "-"
+    }</td>
+<td style="${cell("text-align:center;font-size:8.5pt")}">${
+      actHours ? fmt(actHours) + "h" : "-"
+    }</td>`;
     DAYS.forEach((d) => {
       h += `<td style="${cell("font-size:8.5pt")}">${
         esc(data.progress?.[c.key]?.[d]) || "&nbsp;"
@@ -281,7 +290,10 @@ export function buildWeekHtml(
   const plan = displayTotals(data, "plan");
   const act = displayTotals(data, "act");
 
-  const period = `${week} (${dayDate(week, 0)} ~ ${dayDate(week, 5)})`;
+  const period = `${weekLabel(week, true)} (${dayDate(week, 0)} ~ ${dayDate(
+    week,
+    5
+  )})`;
   const title = (text: string) =>
     `<p style="font-size:15pt;margin:0 0 4pt 0"><strong>${text}</strong>
 <span style="font-size:9pt;font-weight:normal">&nbsp;&nbsp;${period}</span></p>`;
@@ -317,7 +329,7 @@ ${distributionTable(groups)}
 ${progressTable(data)}
 </div>`;
 
-  return `<html><head><meta charset="utf-8"><title>정직이들 ${week}</title>
+  return `<html><head><meta charset="utf-8"><title>정직이들 ${weekLabel(week, true)}</title>
 <style>body{font-family:"맑은 고딕","Malgun Gothic",sans-serif;font-size:10pt}
 @page{size:A4 landscape;margin:12mm}</style></head><body>${body}</body></html>`;
 }
@@ -337,7 +349,7 @@ function download(blob: Blob, filename: string) {
 export function exportWeekToWord(week: string, html: string) {
   download(
     new Blob(["﻿" + html], { type: "application/msword" }),
-    `정직이들_${week}.doc`
+    `정직이들_${weekFileLabel(week)}.doc`
   );
 }
 
@@ -346,7 +358,7 @@ export async function exportWeekToHwpx(week: string, html: string) {
   const { htmlToHwpx } = await import("hwp-convert");
   const { postProcessHwpx } = await import("./docxToHwpx");
   const raw: Uint8Array = await htmlToHwpx(html, {
-    title: `정직이들 ${week}`,
+    title: `정직이들 ${weekLabel(week, true)}`,
     creator: "PlanLedger 정직이들",
   });
 
@@ -360,7 +372,7 @@ export async function exportWeekToHwpx(week: string, html: string) {
 
   download(
     new Blob([new Uint8Array(bytes)], { type: "application/hwp+zip" }),
-    `정직이들_${week}.hwpx`
+    `정직이들_${weekFileLabel(week)}.hwpx`
   );
 }
 

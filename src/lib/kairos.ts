@@ -252,6 +252,25 @@ export function currentWeekValue(): string {
   return toWeekValue(new Date());
 }
 
+const ORDINAL = ["첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째"];
+
+/**
+ * 주차를 사람이 읽는 말로. 그 주 월요일이 속한 달과 순서로 센다.
+ * 예) 2026-W34 (월요일 8월 17일) → "8월 셋째 주"
+ */
+export function weekLabel(weekValue: string, withYear = false): string {
+  const m = isoWeekMonday(weekValue);
+  const month = m.getUTCMonth() + 1;
+  const nth = ORDINAL[Math.floor((m.getUTCDate() - 1) / 7)] ?? "";
+  const label = `${month}월 ${nth} 주`;
+  return withYear ? `${m.getUTCFullYear()}년 ${label}` : label;
+}
+
+/** 파일 이름에 쓰는 형태 — 예) 2026년8월셋째주 */
+export function weekFileLabel(weekValue: string): string {
+  return weekLabel(weekValue, true).replace(/\s/g, "");
+}
+
 /** 그 주 n번째 날짜 문자열 (0 = 월요일) */
 export function dayDate(weekValue: string, dayIndex: number): string {
   const m = isoWeekMonday(weekValue);

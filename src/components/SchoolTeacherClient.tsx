@@ -19,6 +19,7 @@ import {
   gridTotals,
   normalizeWeek,
   sumDay,
+  weekLabel,
   WeekData,
 } from "@/lib/kairos";
 
@@ -97,7 +98,7 @@ export default function SchoolTeacherClient({
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">
-              주간 제출 현황
+              주간 제출 현황 — {weekLabel(week || "", true)}
             </h1>
             {rows && (
               <p className="mt-1 text-sm text-slate-500">
@@ -240,7 +241,8 @@ export default function SchoolTeacherClient({
                 {rows?.find((r) => r.user_id === openFor)?.name} 학생에게 피드백
               </h2>
               <p className="mt-1 text-xs text-slate-500">
-                {week} · 학생이 자기 시간표 화면에서 바로 볼 수 있습니다.
+                {weekLabel(week, true)} · 학생이 자기 시간표 화면에서 바로 볼 수
+                있습니다.
               </p>
               <textarea
                 value={draft}
