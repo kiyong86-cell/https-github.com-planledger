@@ -247,7 +247,7 @@ export default function KairosClient({
             <p className="mt-1 text-base font-medium text-slate-700">
               {weekLabel(week, true)}{" "}
               <span className="text-sm font-normal text-slate-400">
-                {dayDate(week, 0)} ~ {dayDate(week, 5)}
+                {dayDate(week, 0)} ~ {dayDate(week, 6)}
               </span>
             </p>
             <p className="mt-1 text-sm text-slate-500">{t("kairos.intro")}</p>

@@ -145,7 +145,7 @@ export default function RecordsClient({
                         {weekLabel(r.week, true)}
                       </span>
                       <span className="ml-2 text-xs text-slate-400">
-                        {dayDate(r.week, 0)} ~ {dayDate(r.week, 5)}
+                        {dayDate(r.week, 0)} ~ {dayDate(r.week, 6)}
                       </span>
                     </span>
                     <span className="flex items-center gap-4 text-sm text-slate-500">

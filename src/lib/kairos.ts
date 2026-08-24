@@ -10,6 +10,10 @@ export const LIFE_CATS: { key: CatKey; ko: string; en: string; color: string }[]
   { key: "academy", ko: "학원·과외", en: "Tutoring", color: "#14b8a6" },
   { key: "play", ko: "노는 시간", en: "Free time", color: "#f59e0b" },
   { key: "study", ko: "공부(자습)", en: "Self-study", color: "#22c55e" },
+  { key: "meal", ko: "식사", en: "Meal", color: "#fb923c" },
+  { key: "em", ko: "EM", en: "EM", color: "#0ea5e9" },
+  { key: "chat", ko: "대화", en: "Talking", color: "#22d3ee" },
+  { key: "ai", ko: "AI", en: "AI", color: "#475569" },
   { key: "etc", ko: "기타", en: "Other", color: "#a3765a" },
   { key: "buffer", ko: "땜빵", en: "Buffer", color: "#ec4899" },
 ];
@@ -58,7 +62,15 @@ export const CAT_COLOR: Record<CatKey, string> = CATS.reduce(
   {} as Record<CatKey, string>
 );
 
-export const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
+export const DAYS = [
+  "MON",
+  "TUE",
+  "WED",
+  "THU",
+  "FRI",
+  "SAT",
+  "SUN",
+] as const;
 export type DayKey = (typeof DAYS)[number];
 
 export const DAY_KO: Record<DayKey, string> = {
@@ -68,6 +80,7 @@ export const DAY_KO: Record<DayKey, string> = {
   THU: "목",
   FRI: "금",
   SAT: "토",
+  SUN: "일",
 };
 
 export const START_HOUR = 0; // 하루 전체(00~24시)를 표에 담는다

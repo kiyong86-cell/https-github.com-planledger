@@ -292,7 +292,7 @@ export function buildWeekHtml(
 
   const period = `${weekLabel(week, true)} (${dayDate(week, 0)} ~ ${dayDate(
     week,
-    5
+    6
   )})`;
   const title = (text: string) =>
     `<p style="font-size:15pt;margin:0 0 4pt 0"><strong>${text}</strong>
