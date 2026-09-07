@@ -166,6 +166,42 @@ export default function KairosClient({
     return () => window.removeEventListener("mouseup", stop);
   }, []);
 
+  /** 지난 주 계획을 이번 주 계획으로 통째로 가져온다. */
+  function copyPrevWeekPlan() {
+    if (!prevData) return;
+    if (!confirm("지난 주 계획을 이번 주 계획 줄에 덮어씁니다. 진행할까요?")) return;
+    edit((prev) => {
+      const plan = {} as typeof prev.grid.plan;
+      DAYS.forEach((d) => {
+        plan[d] = prevData.grid.plan[d].slice();
+      });
+      return { ...prev, grid: { ...prev.grid, plan } };
+    });
+  }
+
+  /** 지난 주 같은 요일 계획을 이 요일 계획으로 가져온다. */
+  function copyPrevDay(d: DayKey) {
+    if (!prevData) return;
+    edit((prev) => ({
+      ...prev,
+      grid: {
+        ...prev.grid,
+        plan: { ...prev.grid.plan, [d]: prevData.grid.plan[d].slice() },
+      },
+    }));
+  }
+
+  /** 그 요일의 계획을 실행으로 그대로 옮긴다 (계획대로 했을 때). */
+  function copyPlanToAct(d: DayKey) {
+    edit((prev) => ({
+      ...prev,
+      grid: {
+        ...prev.grid,
+        act: { ...prev.grid.act, [d]: prev.grid.plan[d].slice() },
+      },
+    }));
+  }
+
   // 저장 버튼 — 자동 저장을 기다리지 않고 바로 저장한다.
   async function saveNow() {
     if (!data || !week) return;
@@ -601,6 +637,18 @@ export default function KairosClient({
                 {t("kairos.eraser")}
               </button>
               <button
+                onClick={copyPrevWeekPlan}
+                disabled={!prevData}
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                title={
+                  prevData
+                    ? "지난 주 계획을 그대로 가져옵니다"
+                    : "지난 주에 저장된 기록이 없습니다"
+                }
+              >
+                ⧉ 지난 주 계획 가져오기
+              </button>
+              <button
                 onClick={() => {
                   if (!confirm(t("kairos.clearConfirm"))) return;
                   edit(() => ({ ...blankWeek(), days: data.days }));
@@ -632,7 +680,7 @@ export default function KairosClient({
                     <th className="w-14 border bg-slate-100 px-1 py-1 text-xs">
                       {t("kairos.dayCol")}
                     </th>
-                    <th className="w-12 border bg-slate-100 px-1 py-1 text-xs" />
+                    <th className="w-16 border bg-slate-100 px-1 py-1 text-xs" />
                     {Array.from({ length: END_HOUR - START_HOUR }, (_, i) => (
                       <th
                         key={i}
@@ -662,7 +710,27 @@ export default function KairosClient({
                           </td>
                         )}
                         <td className="border bg-slate-50 px-1 text-center text-xs text-slate-500">
-                          {t(label)}
+                          <div className="flex items-center justify-between gap-1">
+                            <span>{t(label)}</span>
+                            {mode === "plan" ? (
+                              <button
+                                onClick={() => copyPrevDay(d)}
+                                disabled={!prevData}
+                                title="지난 주 같은 요일 계획 가져오기"
+                                className="rounded px-1 text-[10px] text-slate-400 hover:bg-slate-200 hover:text-slate-700 disabled:opacity-30"
+                              >
+                                ⧉
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => copyPlanToAct(d)}
+                                title="이 요일 계획을 실행으로 복사"
+                                className="rounded px-1 text-[10px] text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+                              >
+                                ↓
+                              </button>
+                            )}
+                          </div>
                         </td>
                         {Array.from({ length: SLOTS }, (_, i) => {
                           const key = data.grid[mode][d][i];
@@ -699,7 +767,11 @@ export default function KairosClient({
                 </tbody>
               </table>
             </div>
-            <p className="mt-3 text-xs text-slate-400">{t("kairos.nightNote")}</p>
+            <p className="mt-3 text-xs text-slate-400">
+              {t("kairos.nightNote")}
+              <br />※ 계획 줄의 <b>⧉</b> 는 지난 주 같은 요일을 가져오고, 실행
+              줄의 <b>↓</b> 는 그날 계획을 실행으로 그대로 옮깁니다.
+            </p>
 
             <h3 className="mt-8 border-t pt-6 text-base font-semibold text-slate-900">
               과목별 완성 분량

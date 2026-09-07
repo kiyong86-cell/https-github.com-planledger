@@ -41,6 +41,7 @@ export const SUBJECT_CATS: { key: CatKey; ko: string; en: string; color: string 
   { key: "farm", ko: "농사", en: "Farming", color: "#65a30d" },
   { key: "bible", ko: "성경", en: "Bible", color: "#7e22ce" },
   { key: "worship", ko: "예배", en: "Worship", color: "#4f46e5" },
+  { key: "scola", ko: "스콜라", en: "Scola", color: "#ca8a04" },
 ];
 
 export const CATS = [...LIFE_CATS, ...SUBJECT_CATS];
