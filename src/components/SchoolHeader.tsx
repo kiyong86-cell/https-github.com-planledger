@@ -64,6 +64,10 @@ export default function SchoolHeader({
               승인 관리
             </Link>
           )}
+          {/* 연극 사운드보드 — public/school/sound.html 정적 파일이라 Link 대신 a */}
+          <a href="/school/sound.html" className="hover:text-slate-900">
+            사운드보드
+          </a>
           {email && <span className="hidden sm:inline">{email}</span>}
           <button onClick={logout} className="hover:text-slate-900">
             로그아웃

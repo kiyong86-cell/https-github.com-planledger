@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>연극 사운드보드</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #111; color: #eee; font: 15px/1.4 system-ui, "Malgun Gothic", sans-serif; }
+  button { font: inherit; color: inherit; }
+  header { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; background: #1a1a1a; border-bottom: 1px solid #333; }
+  h1 { margin: 0 auto 0 0; font-size: 18px; }
+  .btn { padding: 8px 14px; border: 1px solid #444; border-radius: 8px; background: #2a2a2a; color: inherit; text-decoration: none; cursor: pointer; }
+  .btn:hover { background: #333; }
+  #stopAll { background: #b71c1c; border-color: #b71c1c; font-weight: 700; }
+  #fade { width: 4.5em; padding: 6px; border: 1px solid #444; border-radius: 6px; background: #222; color: inherit; font: inherit; }
+  .help { margin: 0; padding: 8px 16px; color: #888; font-size: 13px; }
+  .warn { margin: 8px 16px 0; padding: 8px 12px; border-radius: 8px; background: #4a3000; color: #ffcc80; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; padding: 8px 16px 24px; }
+  #grid:empty::after { content: "mp3 파일을 이 창에 끌어다 놓거나 '+ 소리 추가'를 누르세요"; grid-column: 1 / -1; padding: 60px 16px; border: 2px dashed #444; border-radius: 12px; color: #777; text-align: center; }
+  body.drag #grid { outline: 3px dashed #4fc3f7; outline-offset: -4px; }
+  .tile { position: relative; --p: 0%; }
+  .play { display: flex; flex-direction: column; justify-content: space-between; width: 100%; height: 110px; padding: 10px 12px; border: 2px solid #333; border-radius: 10px; background: linear-gradient(90deg, #1b5e20 var(--p), #222 var(--p)); text-align: left; cursor: pointer; user-select: none; }
+  .play:hover { border-color: #555; }
+  .playing .play { border-color: #66bb6a; }
+  .fading .play { border-color: #ffb300; }
+  .key { align-self: flex-start; min-width: 1.6em; padding: 0 5px; border: 1px solid #555; border-radius: 4px; color: #aaa; font-size: 13px; text-align: center; }
+  .key:empty { visibility: hidden; }
+  .name { font-weight: 600; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-all; }
+  .time { color: #bbb; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .icon { position: absolute; top: 6px; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: #777; font-size: 16px; cursor: pointer; }
+  .icon:hover { background: #333; color: #eee; }
+  .del { right: 6px; }
+  .loop { right: 38px; }
+  .loop[aria-pressed="true"] { background: #0d3b52; color: #4fc3f7; }
+</style>
+</head>
+<body>
+<header>
+  <a id="home" class="btn" href="/school" hidden>← 정직이들</a>
+  <h1>연극 사운드보드</h1>
+  <label class="btn">+ 소리 추가<input id="file" type="file" accept="audio/*,.mp3" multiple hidden></label>
+  <label title="재생 중인 소리를 다시 누르면 이 시간 동안 줄어들며 꺼짐 (0 = 바로 정지)">페이드 <input id="fade" type="number" min="0" max="20" step="0.5" value="2"> 초</label>
+  <button id="stopAll" class="btn">■ 전체 정지 (Esc)</button>
+  <button id="clear" class="btn">모두 삭제</button>
+</header>
+<p class="help">클릭 또는 키보드(1~0, Q~P, A~L, Z~M)로 재생 · 재생 중 다시 누르면 페이드아웃, 한 번 더 누르면 즉시 정지 · ↻ 반복 재생 · 추가한 파일은 이 브라우저에 저장됨</p>
+<div id="grid"></div>
+<script>
+const KEYS = [...'1234567890'].map(c => 'Digit' + c).concat([...'QWERTYUIOPASDFGHJKLZXCVBNM'].map(c => 'Key' + c));
+const $ = id => document.getElementById(id);
+const grid = $('grid'), fade = $('fade');
+let sounds = [], db = null, tempId = 0;
+if (location.protocol.startsWith('http')) $('home').hidden = false;   // 정직이들 사이트에서 열 때만 돌아가기 버튼 (내 PC 파일로 열면 숨김)
+
+// 저장: 파일 자체를 IndexedDB에 보관 → 새로고침·재부팅 후에도 유지, 원본 USB 빼도 됨
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('soundboard', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('sounds', { keyPath: 'id', autoIncrement: true });
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+function dbDo(mode, fn) {
+  return new Promise((res, rej) => {
+    const t = db.transaction('sounds', mode), req = fn(t.objectStore('sounds'));
+    t.oncomplete = () => res(req.result);
+    t.onerror = t.onabort = () => rej(t.error);
+  });
+}
+const dbPut = rec => db ? dbDo('readwrite', s => s.put(rec)) : Promise.resolve(++tempId); // 저장 불가 브라우저면 메모리에서만
+const dbDel = id => db && dbDo('readwrite', s => s.delete(id));
+
+const fmt = t => isFinite(t) && t > 0 ? `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}` : '0:00';
+
+function makeSound(rec) {
+  const s = { id: rec.id, name: rec.name, blob: rec.blob, loop: !!rec.loop, fading: null };
+  s.url = URL.createObjectURL(rec.blob);
+  const a = s.audio = new Audio(s.url);
+  a.preload = 'auto';
+  a.loop = s.loop;
+  const el = s.el = document.createElement('div');
+  el.className = 'tile';
+  el.innerHTML = '<button class="play"><span class="key"></span><span class="name"></span><span class="time">0:00</span></button>'
+    + '<button class="icon loop" title="반복 재생" aria-label="반복 재생">↻</button>'
+    + '<button class="icon del" title="삭제" aria-label="삭제">×</button>';
+  const [play, loop, del] = el.children;
+  [s.keyEl, , s.timeEl] = play.children;
+  play.children[1].textContent = s.name;
+  loop.setAttribute('aria-pressed', s.loop);
+  play.onclick = () => toggle(s);
+  loop.onclick = () => {
+    s.loop = a.loop = !s.loop;
+    loop.setAttribute('aria-pressed', s.loop);
+    dbPut({ id: s.id, name: s.name, blob: s.blob, loop: s.loop });
+  };
+  del.onclick = () => confirm(`"${s.name}" 삭제할까요?`) && remove(s);
+  a.onloadedmetadata = a.ontimeupdate = () => {
+    const d = a.duration, on = !a.paused;
+    s.timeEl.textContent = on ? '-' + fmt(d - a.currentTime) : fmt(d);
+    el.style.setProperty('--p', on && isFinite(d) && d ? a.currentTime / d * 100 + '%' : '0%');
+  };
+  a.onplay = a.onpause = () => { el.classList.toggle('playing', !a.paused); a.ontimeupdate(); };
+  a.onerror = () => { s.timeEl.textContent = '재생 불가 파일'; };
+  return s;
+}
+
+function toggle(s) {
+  const a = s.audio;
+  if (a.paused) {
+    a.currentTime = 0;
+    a.volume = 1;
+    a.play().catch(e => e.name !== 'AbortError' && alert('재생 실패: ' + s.name));
+  } else if (s.fading) stop(s);   // 페이드 중 한 번 더 = 즉시 정지
+  else fadeOut(s);
+}
+
+function fadeOut(s) {
+  const sec = +fade.value;
+  if (!(sec > 0)) return stop(s);
+  const a = s.audio, v0 = a.volume, t0 = performance.now();
+  s.el.classList.add('fading');
+  s.fading = setInterval(() => {
+    const t = (performance.now() - t0) / (sec * 1000);
+    if (t >= 1) stop(s); else a.volume = v0 * (1 - t) ** 2;   // 곡선 페이드: 직선보다 귀에 자연스러움
+  }, 30);
+}
+
+function stop(s) {
+  clearInterval(s.fading);
+  s.fading = null;
+  s.el.classList.remove('fading');
+  s.audio.pause();
+  s.audio.currentTime = 0;
+  s.audio.volume = 1;
+}
+
+function remove(s) {
+  stop(s);
+  URL.revokeObjectURL(s.url);
+  sounds = sounds.filter(x => x !== s);
+  dbDel(s.id);
+  render();
+}
+
+function render() {
+  sounds.forEach((s, i) => s.keyEl.textContent = KEYS[i] ? KEYS[i].slice(-1) : '');
+  grid.replaceChildren(...sounds.map(s => s.el));
+}
+
+async function addFiles(files) {
+  const list = [...files]
+    .filter(f => f.type.startsWith('audio/') || /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(f.name))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));   // 01, 02, … 10 순서 유지
+  for (const f of list) {
+    const rec = { name: f.name.replace(/\.[^.]+$/, ''), blob: f, loop: false };
+    try { rec.id = await dbPut(rec); }
+    catch (e) { alert('저장 실패(저장 공간 부족?): ' + f.name); continue; }
+    sounds.push(makeSound(rec));
+  }
+  render();
+}
+
+function warn(msg) {
+  const p = document.createElement('p');
+  p.className = 'warn';
+  p.textContent = msg;
+  grid.before(p);
+}
+
+addEventListener('keydown', e => {
+  if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+  if (e.code === 'Escape') return sounds.forEach(stop);
+  if (e.target.closest('input')) return;   // 페이드 시간 입력 중엔 무시
+  const s = sounds[KEYS.indexOf(e.code.replace('Numpad', 'Digit'))];   // e.code라 한글 입력 상태여도 작동
+  if (s) { e.preventDefault(); toggle(s); }
+});
+document.addEventListener('click', e => e.target.closest('button')?.blur());   // 클릭 후 스페이스·엔터가 버튼을 다시 누르지 않게
+addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('drag'); });
+addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('drag'); });
+addEventListener('drop', e => { e.preventDefault(); document.body.classList.remove('drag'); addFiles(e.dataTransfer.files); });
+
+$('file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+$('stopAll').onclick = () => sounds.forEach(stop);
+$('clear').onclick = () => {
+  if (!sounds.length || !confirm('모든 소리를 삭제할까요?')) return;
+  sounds.forEach(s => { stop(s); URL.revokeObjectURL(s.url); });
+  sounds = [];
+  if (db) dbDo('readwrite', st => st.clear());
+  render();
+};
+try { fade.value = localStorage.fadeSec ?? fade.value; } catch {}
+fade.onchange = () => { fade.blur(); try { localStorage.fadeSec = fade.value; } catch {} };
+
+openDB()
+  .then(d => { db = d; navigator.storage?.persist?.(); return dbDo('readonly', s => s.getAll()); })
+  .then(recs => recs.forEach(r => sounds.push(makeSound(r))))
+  .catch(() => { db = null; warn('이 브라우저에서는 파일 저장이 안 됩니다. 새로고침하면 다시 추가해야 해요. (Chrome·Edge 권장)'); })
+  .finally(render);
+</script>
+</body>
+</html>
