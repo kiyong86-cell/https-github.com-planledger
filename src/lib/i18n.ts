@@ -61,6 +61,8 @@ const ko: Dict = {
   "form.type.external.desc": "시장 분석·수익 구조·재무 계획·팀 소개까지 포함한 제출용 구성",
   "form.type.proposal.label": "기업 제안서",
   "form.type.proposal.desc": "기업·기관에 협업/납품/후원을 제안하는 구성",
+  "form.type.impact.label": "임팩트 기획안",
+  "form.type.impact.desc": "문제정의·원인분석·성과지표를 근거로 증명하는 공모·후원 사업 제안용 구성",
   "form.type.selected": "✓ 선택됨",
 
   // 기획안 폼 - 필드
@@ -311,6 +313,8 @@ const en: Dict = {
   "form.type.external.desc": "Full submission layout with market analysis, revenue model, finances, team",
   "form.type.proposal.label": "Business proposal",
   "form.type.proposal.desc": "For proposing collaboration/supply/sponsorship to a company",
+  "form.type.impact.label": "Impact plan",
+  "form.type.impact.desc": "Evidence-led layout for grants and funders: problem, root cause, outcome indicators",
   "form.type.selected": "✓ Selected",
 
   "form.docTitle": "Document title",

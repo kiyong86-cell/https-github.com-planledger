@@ -46,7 +46,7 @@ export type Timetable = {
   rows: TimetableRow[];
 };
 
-export type PlanType = "internal" | "external" | "proposal";
+export type PlanType = "internal" | "external" | "proposal" | "impact";
 
 export type BusinessPlanContent = {
   planType: PlanType;

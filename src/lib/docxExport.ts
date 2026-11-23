@@ -14,6 +14,7 @@ import {
   AlignmentType,
   HeadingLevel,
 } from "docx";
+import { planTypeLabelKo } from "./businessPlanTemplate";
 import {
   BusinessPlanContent,
   formatMoney,
@@ -236,8 +237,7 @@ export function buildPlanDocument(
   content: BusinessPlanContent,
   imageParas: Paragraph[]
 ): Document {
-  const planTypeLabel =
-    content.planType === "internal" ? "내부 기획안" : "외부 기획안";
+  const planTypeLabel = planTypeLabelKo(content.planType);
   const today = new Date();
   const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
 

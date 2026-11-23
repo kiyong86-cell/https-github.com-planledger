@@ -17,7 +17,7 @@ import {
   TimetableCell,
 } from "@/lib/types";
 
-const PLAN_TYPES: PlanType[] = ["internal", "external", "proposal"];
+const PLAN_TYPES: PlanType[] = ["internal", "external", "proposal", "impact"];
 
 function defaultTime(): string {
   return "09:00-09:30";
@@ -484,7 +484,7 @@ export default function BusinessPlanForm({
 
   return (
     <div className="space-y-6">
-      <div className="no-print grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="no-print grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {PLAN_TYPES.map((type) => (
           <button
             key={type}
@@ -562,9 +562,9 @@ export default function BusinessPlanForm({
               </button>
             </div>
           </div>
-          {getSectionHint(section.title) && (
+          {getSectionHint(section.title, content.planType) && (
             <p className="mb-1 pl-6 text-xs text-slate-400">
-              {getSectionHint(section.title)}
+              {getSectionHint(section.title, content.planType)}
             </p>
           )}
           <textarea

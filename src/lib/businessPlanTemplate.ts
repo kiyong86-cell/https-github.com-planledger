@@ -42,6 +42,22 @@ const TEMPLATES: Record<Lang, Record<PlanType, SectionDef[]>> = {
       { title: "기대 효과", hint: "이 제안이 받아들여지면 무엇이 달라지는지 구체적으로 적으세요." },
       { title: "맺음말", hint: "함께하기를 바라는 마음을 담아 마무리하세요." },
     ],
+    impact: [
+      { title: "사업 요약", hint: "한 장으로 읽히게 쓰세요. 누구의 어떤 문제를, 어떤 근거로 확인했고, 무엇을 얼마나 바꾸겠다는 것인지. 뒤의 모든 항목은 이 요약을 증명하는 자료입니다." },
+      { title: "문제 정의", hint: "무엇이 문제이고 왜 지금 중요한지를 느낌이 아니라 출처 있는 수치로 씁니다. 숫자 하나에 ①수치 ②비교 기준 ③의미를 함께 붙이세요. '고령화율 49.2%'만 쓰면 \"그래서?\"로 끝납니다. '전국 평균 21%의 2.3배로 전국 1위 — 독거어르신 고립이 가장 먼저 터질 지역'까지 써야 설득이 됩니다." },
+      { title: "사업 대상", hint: "누구의 문제인가, 왜 다른 집단이 아니라 이 집단인가. 대상은 좁고 구체적일수록 강합니다. '청년'이 아니라 '시설 퇴소 후 자립준비청년', '노인'이 아니라 '대중교통이 닿지 않는 마을의 85세 이상 독거어르신'처럼 쓰세요." },
+      { title: "문제의 규모와 심각성", hint: "몇 명·몇 가구인지(규모), 한 시점의 문제 정도가 얼마인지(심각도, 비율·점수), 몇 년째 이어지고 있는지(지속성, 연도별 추이)를 나눠 씁니다. 100명과 10만 명짜리 문제는 무게가 다르고, 올해 생긴 문제와 10년째인 문제도 다릅니다." },
+      { title: "원인 분석", hint: "현상에서 '왜'를 반복해 내려가되 답마다 근거 자료를 붙입니다. 멈추는 지점은 다섯 번째가 아니라 '우리 사업으로 손댈 수 있고 근거가 있는 곳'입니다. 더 내려가면 인구 감소·가족 구조 변화 같은 구조적 원인이라 한 사업으로는 풀리지 않습니다." },
+      { title: "주목할 원인", hint: "원인 후보를 늘어놓고 네 가지로 거르세요. ①사업으로 바꿀 수 있는 조건인가 ②우리 예산·인력·사업 기간 안에서 손이 닿는가 ③바꾸면 문제가 실제로 줄어든다는 근거가 있는가 ④바뀌었는지 지표로 확인할 수 있는가. 문제 정의는 객관적으로 하되, 우리 기관의 관점은 원인을 고를 때부터 넣습니다." },
+      { title: "기존 대응 현황과 우리가 하는 이유", hint: "우리가 아니어도 누가 이미 하고 있지 않은지 확인하고, 비어 있는 자리를 짚으세요. 이미 하는 곳이 많아도 괜찮습니다 — 우리 미션·전문성·네트워크·현장 경험 때문에 우리가 할 때 달라지는 점이 있으면 그게 이유가 됩니다." },
+      { title: "목표와 가설", hint: "한 문장으로 쓰세요. \"(원인)을 (방법)으로 개선하면, (대상)의 (문제 지표)가 (방향)으로 변화할 것이다.\" 목표는 이 문장을 수치로 바꾼 것입니다." },
+      { title: "사업 내용", hint: "가설을 실행으로 옮긴 활동을 씁니다. 활동마다 어떤 원인을 겨냥하는지가 보여야 합니다. 개입 방식은 효과가 평가된 국내외 사례(평가 보고서, 체계적 문헌 고찰)에서 가져오면 그 자체가 근거가 됩니다." },
+      { title: "추진 일정", hint: "준비·실행·평가를 단계별·월별로 정리하세요. 표로 만들려면 아래 일정표를 쓰면 됩니다." },
+      { title: "성과 측정 계획", hint: "문제 지표를 뒤집으면 그대로 성과 지표가 됩니다. 앞에서 쓴 수치가 기준값(baseline)이고, '우울 16.1%'는 '참여자 우울 비율 감소'가 됩니다. 활동 결과(몇 건·몇 명) · 대상의 변화(태도·상태) · 궁극적 변화를 나눠 쓰고, 지표마다 측정 시점과 자료 출처를 적으세요." },
+      { title: "예상 위험과 대응", hint: "기대와 다를 가능성을 씁니다. 어떤 가정이 틀리면 사업이 흔들리는지, 그때 무엇을 바꿀지. 숨기지 않고 쓸수록 심사자의 신뢰가 올라갑니다." },
+      { title: "수행 역량", hint: "이 일을 우리가 해낼 수 있다는 근거를 씁니다. 비슷한 사업 실적, 담당 인력, 협력 기관, 현장 접근성. 금액은 아래 예산안에 작성하세요." },
+      { title: "근거 자료 목록", hint: "인용한 수치마다 발표 기관, 조사 연도, 표본 수, 원문 링크를 적습니다. 기사 재인용이나 AI 요약이 아니라 원문을 직접 열어 확인한 것만 쓰세요. 확인 못 한 수치는 빼거나 '확인 불가'로 표시합니다." },
+    ],
   },
   en: {
     internal: [
@@ -71,18 +87,52 @@ const TEMPLATES: Record<Lang, Record<PlanType, SectionDef[]>> = {
       { title: "Expected Impact", hint: "Concretely state what will change if this proposal is accepted." },
       { title: "Closing", hint: "Close with your hope to work together." },
     ],
+    impact: [
+      { title: "Summary", hint: "Make it readable on one page: whose problem, how you verified it, and what you will change by how much. Everything after this exists to prove this summary." },
+      { title: "Problem Definition", hint: "State what the problem is and why it matters now — with sourced numbers, not impressions. Give every figure three parts: the number, a comparison, and the meaning. '49.2% elderly' alone invites \"so what?\". '2.3x the national average of 21%, highest in the country — this is where isolation breaks first' persuades." },
+      { title: "Who This Is For", hint: "Whose problem is it, and why this group rather than another? Narrow and specific beats broad: not 'youth' but 'youth ageing out of care', not 'the elderly' but 'people over 85 living alone in villages public transit doesn't reach'." },
+      { title: "Scale & Severity", hint: "Separate three things: how many people or households (scale), how bad it is at one point in time (severity, as a rate or score), and how long it has run (duration, year over year). A problem affecting 100 and one affecting 100,000 carry different weight." },
+      { title: "Root Cause Analysis", hint: "Ask 'why' repeatedly down from the symptom, attaching evidence to each answer. Stop not at the fifth why but at the point your project can actually reach and evidence exists. Go further and you hit structural causes — population decline, family structure — that no single project solves." },
+      { title: "The Cause You Target", hint: "List cause candidates and filter with four questions. (1) Can a project change this condition? (2) Is it within your budget, staff and timeline? (3) Is there evidence that changing it reduces the problem? (4) Can you verify the change with an indicator? Define the problem objectively, but bring your organization's perspective in here, when choosing the cause." },
+      { title: "Existing Efforts & Why You", hint: "Check who is already doing this and name the gap. Crowded fields are fine — if your mission, expertise, network or field presence makes your version different, that difference is the answer." },
+      { title: "Goal & Hypothesis", hint: "One sentence: \"If we improve (cause) through (method), then (target group)'s (problem indicator) will move (direction).\" Your goal is that sentence expressed as a number." },
+      { title: "Activities", hint: "Turn the hypothesis into activities, and make clear which cause each one targets. Drawing your approach from interventions that have been evaluated (impact evaluations, systematic reviews) is itself evidence." },
+      { title: "Timeline", hint: "Lay out preparation, delivery and evaluation by phase and month. Use the timetable below to show it as a table." },
+      { title: "Measurement Plan", hint: "Flip the problem indicator and you have your outcome indicator. The figures you already cited become the baseline: 'depression 16.1%' becomes 'reduction in participant depression'. Separate outputs (counts), outcomes (change in the target group) and long-term impact, and note when and from what source each is measured." },
+      { title: "Risks & Response", hint: "Say where reality may differ from expectation: which assumption, if wrong, destabilizes the project, and what you would change. Stating this openly raises reviewer confidence rather than lowering it." },
+      { title: "Capacity to Deliver", hint: "Show evidence you can do this: comparable past work, assigned staff, partner organizations, access to the field. Put amounts in the Budget below." },
+      { title: "Sources", hint: "For each figure, list the publishing body, survey year, sample size and a link to the original. Use only what you opened and read yourself — not a figure quoted in an article or summarized by AI. Drop anything you couldn't verify, or mark it as unverified." },
+    ],
   },
 };
 
 // 저장된 문서의 섹션 제목으로 도움말을 찾는다 (양쪽 언어 모두 검색).
-export function getSectionHint(title: string): string | undefined {
+// 같은 제목("추진 일정")을 여러 유형이 쓰므로, 지금 고른 유형을 먼저 본다.
+export function getSectionHint(
+  title: string,
+  planType?: PlanType
+): string | undefined {
+  const types = ["internal", "external", "proposal", "impact"] as PlanType[];
+  const order = planType ? [planType, ...types.filter((t) => t !== planType)] : types;
   for (const lang of ["ko", "en"] as Lang[]) {
-    for (const type of ["internal", "external", "proposal"] as PlanType[]) {
+    for (const type of order) {
       const found = TEMPLATES[lang][type].find((s) => s.title === title);
       if (found) return found.hint;
     }
   }
   return undefined;
+}
+
+/** 내보낸 문서 머리말에 쓰는 유형 이름. */
+const PLAN_TYPE_LABEL_KO: Record<PlanType, string> = {
+  internal: "내부 기획안",
+  external: "외부 기획안",
+  proposal: "기업 제안서",
+  impact: "임팩트 기획안",
+};
+
+export function planTypeLabelKo(planType: PlanType): string {
+  return PLAN_TYPE_LABEL_KO[planType] ?? "외부 기획안";
 }
 
 export function emptyTimetable(): Timetable {
@@ -184,11 +234,11 @@ export function normalizeContent(raw: unknown): BusinessPlanContent {
   };
 
   const normalizedType: PlanType =
-    data.planType === "internal"
-      ? "internal"
-      : data.planType === "proposal"
-        ? "proposal"
-        : "external";
+    data.planType === "internal" ||
+    data.planType === "proposal" ||
+    data.planType === "impact"
+      ? data.planType
+      : "external";
 
   if (Array.isArray(data.sections)) {
     return {
