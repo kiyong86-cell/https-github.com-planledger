@@ -85,71 +85,133 @@ function scanBlocks(src: string, open: string, close: string): string[] {
   return blocks;
 }
 
-export function extractTableCellStyles(docXml: string): CellStyle[][][] {
-  const tables = scanBlocks(docXml, "<w:tbl>", "</w:tbl>");
-  return tables.map((tbl) => {
-    const rows = tbl.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
-    return rows.map((tr) => {
-      const cells = tr.match(/<w:tc>[\s\S]*?<\/w:tc>/g) || [];
-      const visible: CellStyle[] = [];
-      for (const tc of cells) {
-        // 세로병합 이어짐 셀(<w:vMerge/>, restart 아님)은 mammoth가 출력하지 않으므로 건너뜀
-        if (/<w:vMerge\s*\/>/.test(tc)) continue;
-        const style: CellStyle = {};
-        const fill = tc.match(/<w:shd[^>]*w:fill="([0-9A-Fa-f]{6})"/);
-        if (fill) style.fill = fill[1].toUpperCase();
-        const color = tc.match(/<w:color[^>]*w:val="([0-9A-Fa-f]{6})"/);
-        if (color) style.color = color[1].toUpperCase();
-        const jc = tc.match(/<w:jc w:val="(\w+)"/);
-        if (jc) style.align = JC_TO_CSS[jc[1]];
-        const va = tc.match(/<w:vAlign w:val="(\w+)"/);
-        if (va) style.vAlign = VALIGN_TO_CSS[va[1]];
-        style.fontPt = dominantFontPt(tc);
-        visible.push(style);
-      }
-      return visible;
-    });
+// 블록들을 뒤에서부터 잘라낸다 (앞에서 지우면 뒤 블록의 위치가 밀린다).
+// 같은 내용의 블록이 둘 이상이어도 각자 제 위치가 지워진다.
+function removeBlocks(src: string, blocks: string[]): string {
+  let out = src;
+  for (const b of [...blocks].reverse()) {
+    const at = out.lastIndexOf(b);
+    if (at !== -1) out = out.slice(0, at) + out.slice(at + b.length);
+  }
+  return out;
+}
+
+/**
+ * 세로병합으로 이어지는 셀인지 본다.
+ * Word는 세 가지로 쓴다: <w:vMerge/>, <w:vMerge w:val="continue"/>, (드물게) 값 없는 형태.
+ * restart만 실제 셀이고 나머지는 mammoth가 출력하지 않으므로 건너뛰어야 한다.
+ * 예전에는 <w:vMerge/> 한 가지만 봐서, Word가 쓰는 continue 형태를 셀로 세었다.
+ * 그러면 그 행의 뒤쪽 셀 색·정렬·글자 크기가 전부 한 칸씩 밀려 표가 어그러졌다.
+ */
+function isMergeContinuation(tc: string): boolean {
+  const m = tc.match(/<w:vMerge\b([^>]*)>/);
+  if (!m) return false;
+  return !/w:val="restart"/.test(m[1]);
+}
+
+/** 표 하나의 "자기 행"만 읽는다 (셀 안에 들어 있는 표는 들어낸다). */
+function ownRowStyles(tbl: string): CellStyle[][] {
+  const stripped = removeBlocks(
+    tbl.slice("<w:tbl>".length),
+    scanBlocks(tbl.slice("<w:tbl>".length), "<w:tbl>", "</w:tbl>")
+  );
+  const rows = stripped.match(/<w:tr(?:\s[^>]*)?>[\s\S]*?<\/w:tr>/g) || [];
+  return rows.map((tr) => {
+    const cells = tr.match(/<w:tc(?:\s[^>]*)?>[\s\S]*?<\/w:tc>/g) || [];
+    const visible: CellStyle[] = [];
+    for (const tc of cells) {
+      if (isMergeContinuation(tc)) continue;
+      const style: CellStyle = {};
+      const fill = tc.match(/<w:shd[^>]*w:fill="([0-9A-Fa-f]{6})"/);
+      if (fill) style.fill = fill[1].toUpperCase();
+      const color = tc.match(/<w:color[^>]*w:val="([0-9A-Fa-f]{6})"/);
+      if (color) style.color = color[1].toUpperCase();
+      const jc = tc.match(/<w:jc w:val="(\w+)"/);
+      if (jc) style.align = JC_TO_CSS[jc[1]];
+      const va = tc.match(/<w:vAlign w:val="(\w+)"/);
+      if (va) style.vAlign = VALIGN_TO_CSS[va[1]];
+      style.fontPt = dominantFontPt(tc);
+      visible.push(style);
+    }
+    return visible;
   });
 }
 
-// 추출한 셀 색상·정렬을 mammoth HTML의 같은 위치 셀에 입힌다.
+// 표를 바깥→안쪽 순서(전위 순회)로 늘어놓는다.
+// mammoth가 <table> 여는 태그를 내보내는 순서와 같아서, 이 순서대로 짝지으면 어긋나지 않는다.
+export function extractTableCellStyles(docXml: string): CellStyle[][][] {
+  const out: CellStyle[][][] = [];
+  const walk = (src: string) => {
+    for (const tbl of scanBlocks(src, "<w:tbl>", "</w:tbl>")) {
+      out.push(ownRowStyles(tbl)); // 부모 먼저
+      walk(tbl.slice("<w:tbl>".length)); // 그다음 그 안의 표들
+    }
+  };
+  walk(docXml);
+  return out;
+}
+
+/**
+ * 추출한 셀 색상·정렬을 mammoth HTML의 같은 위치 셀에 입힌다.
+ *
+ * 표를 통째로 정규식으로 잡으면 표 안에 표가 있을 때 바깥 표의 끝을 안쪽 표의 </table>로
+ * 착각해, 그 뒤 표들의 색과 정렬이 엉뚱한 표로 옮겨붙는다. 그래서 통째로 잡지 않고
+ * 여는 태그를 앞에서부터 한 번만 훑으면서 "지금 어느 표의 몇째 행, 몇째 칸인지"를
+ * 쌓아 둔다. 안쪽 표가 열리면 쌓고, 닫히면 걷어내므로 바깥 표의 칸 번호가 섞이지 않는다.
+ */
 export function applyTableCellStyles(
   html: string,
   styles: CellStyle[][][]
 ): string {
-  let ti = -1;
-  return html.replace(/<table[\s\S]*?<\/table>/g, (tbl) => {
-    ti++;
-    const tStyles = styles[ti];
-    if (!tStyles) return tbl;
-    let ri = -1;
-    return tbl.replace(/<tr[\s\S]*?<\/tr>/g, (tr) => {
-      ri++;
-      const row = tStyles[ri];
-      if (!row) return tr;
-      let ci = -1;
-      return tr.replace(/<(td|th)((?:\s[^>]*)?)>/g, (m, tag, attrs) => {
-        ci++;
-        const cs = row[ci];
+  const stack: { table: number; row: number; cell: number }[] = [];
+  let opened = -1; // 지금까지 열린 표 개수(= 다음 표의 번호)
+  let out = "";
+  let pos = 0;
+
+  const re = /<table\b[^>]*>|<\/table>|<tr\b[^>]*>|<(td|th)\b((?:\s[^>]*)?)>/g;
+  for (let m = re.exec(html); m; m = re.exec(html)) {
+    out += html.slice(pos, m.index);
+    pos = m.index + m[0].length;
+    let replacement = m[0];
+
+    if (m[0].startsWith("</table")) {
+      stack.pop();
+    } else if (m[0].startsWith("<table")) {
+      stack.push({ table: ++opened, row: -1, cell: -1 });
+    } else if (m[0].startsWith("<tr")) {
+      const top = stack[stack.length - 1];
+      if (top) {
+        top.row++;
+        top.cell = -1;
+      }
+    } else {
+      const top = stack[stack.length - 1];
+      const [, tag, attrs] = m;
+      if (top) {
+        top.cell++;
+        const cs = styles[top.table]?.[top.row]?.[top.cell];
         if (
-          !cs ||
-          (!cs.fill && !cs.color && !cs.align && !cs.vAlign && !cs.fontPt)
-        )
-          return m;
-        const style = [
-          `border:1px solid ${BORDER}`,
-          cs.fill ? `background-color:#${cs.fill}` : "",
-          cs.color ? `color:#${cs.color}` : "",
-          cs.align ? `text-align:${cs.align}` : "",
-          cs.vAlign ? `vertical-align:${cs.vAlign}` : "",
-          cs.fontPt ? `font-size:${cs.fontPt}pt` : "",
-        ]
-          .filter(Boolean)
-          .join(";");
-        return `<${tag} style="${style}"${attrs}>`;
-      });
-    });
-  });
+          cs &&
+          (cs.fill || cs.color || cs.align || cs.vAlign || cs.fontPt) &&
+          !/\sstyle=/.test(attrs)
+        ) {
+          const style = [
+            `border:1px solid ${BORDER}`,
+            cs.fill ? `background-color:#${cs.fill}` : "",
+            cs.color ? `color:#${cs.color}` : "",
+            cs.align ? `text-align:${cs.align}` : "",
+            cs.vAlign ? `vertical-align:${cs.vAlign}` : "",
+            cs.fontPt ? `font-size:${cs.fontPt}pt` : "",
+          ]
+            .filter(Boolean)
+            .join(";");
+          replacement = `<${tag} style="${style}"${attrs}>`;
+        }
+      }
+    }
+    out += replacement;
+  }
+  return out + html.slice(pos);
 }
 
 // 표 밖 본문 문단의 정렬(가운데·오른쪽)과 글자 크기를 글자 내용과 함께 추출한다.
@@ -241,12 +303,16 @@ export function extractPageBreakTexts(docXml: string): string[] {
 export function applyBodyAligns(html: string, aligns: BodyAlign[]): string {
   if (aligns.length === 0) return html;
 
-  // 표 안 문단은 건드리지 않도록 표를 잠시 빼둔다
+  // 표 안 문단은 건드리지 않도록 표를 잠시 빼둔다.
+  // 정규식으로 통째로 잡으면 표 안의 표에서 끝을 잘못 잡아 표 조각이 본문에 남는다.
   const tables: string[] = [];
-  const masked = html.replace(/<table[\s\S]*?<\/table>/g, (t) => {
-    tables.push(t);
-    return ` TBL${tables.length - 1} `;
-  });
+  let masked = html;
+  for (const t of [...scanBlocks(html, "<table", "</table>")].reverse()) {
+    const at = masked.lastIndexOf(t);
+    if (at === -1) continue;
+    tables.unshift(t);
+    masked = masked.slice(0, at) + "  TBL  " + masked.slice(at + t.length);
+  }
 
   const pending = [...aligns];
   const aligned = masked.replace(
@@ -277,7 +343,14 @@ export function applyBodyAligns(html: string, aligns: BodyAlign[]): string {
     }
   );
 
-  return aligned.replace(/ TBL(\d+) /g, (_m, i) => tables[Number(i)]);
+  // 자리표시자를 앞에서부터 차례로 원래 표로 되돌린다.
+  let restored = aligned;
+  for (const t of tables) {
+    const at = restored.indexOf("  TBL  ");
+    if (at === -1) break;
+    restored = restored.slice(0, at) + t + restored.slice(at + "  TBL  ".length);
+  }
+  return restored;
 }
 
 // 문단 위/아래 여백. 변환 엔진이 CSS margin을 통째로 버리므로(전부 0으로 나감)
@@ -580,19 +653,30 @@ function resizeTable(tbl: string, grid: number[]): string | null {
   );
 }
 
+// 표 블록을 뒤에서부터 위치 기준으로 갈아끼운다.
+// String.replace에 문자열을 넘기면 내용 속 $& 같은 글자가 치환 기호로 해석돼 XML이 깨지고,
+// 똑같이 생긴 표가 둘이면 늘 앞의 것만 바뀐다.
+function spliceTables(
+  sectionXml: string,
+  pick: (tbl: string, index: number) => string | null
+): string {
+  const tables = scanBlocks(sectionXml, "<hp:tbl ", "</hp:tbl>");
+  let out = sectionXml;
+  for (let i = tables.length - 1; i >= 0; i--) {
+    const updated = pick(tables[i], i);
+    if (!updated) continue;
+    const at = out.lastIndexOf(tables[i]);
+    if (at === -1) continue;
+    out = out.slice(0, at) + updated + out.slice(at + tables[i].length);
+  }
+  return out;
+}
+
 export function applyColumnWidths(
   sectionXml: string,
   grids: number[][]
 ): string {
-  const tables = scanBlocks(sectionXml, "<hp:tbl ", "</hp:tbl>");
-  let out = sectionXml;
-
-  tables.forEach((tbl, ti) => {
-    const updated = resizeTable(tbl, grids[ti]);
-    if (updated) out = out.replace(tbl, updated);
-  });
-
-  return out;
+  return spliceTables(sectionXml, (tbl, ti) => resizeTable(tbl, grids[ti]));
 }
 
 /** 문서 순서 대신 "열 개수"로 표를 찾아 너비를 지정한다. */
@@ -600,16 +684,10 @@ export function applyColumnWidthsByColCount(
   sectionXml: string,
   map: Record<number, number[]>
 ): string {
-  const tables = scanBlocks(sectionXml, "<hp:tbl ", "</hp:tbl>");
-  let out = sectionXml;
-
-  tables.forEach((tbl) => {
+  return spliceTables(sectionXml, (tbl) => {
     const colCnt = Number(tbl.match(/colCnt="(\d+)"/)?.[1] ?? 0);
-    const updated = resizeTable(tbl, map[colCnt]);
-    if (updated) out = out.replace(tbl, updated);
+    return resizeTable(tbl, map[colCnt]);
   });
-
-  return out;
 }
 
 // 변환 엔진은 정렬을 지정하지 않은 문단을 모두 "양쪽 정렬(JUSTIFY)"로 만든다.
@@ -698,6 +776,61 @@ export async function postProcessHwpx(
   }
 }
 
+/** 가장 바깥 표들만 골라 바꾼다 (표 안의 표는 그 표의 일부로 함께 넘어간다). */
+function replaceTopLevelTables(
+  html: string,
+  fn: (tbl: string) => string
+): string {
+  const blocks = scanBlocks(html, "<table", "</table>");
+  let out = html;
+  // 뒤에서부터 갈아끼워야 앞 블록의 위치가 밀리지 않는다.
+  // (String.replace에 문자열을 넘기면 $& 같은 글자가 치환 기호로 해석돼 XML이 깨진다)
+  for (const tbl of [...blocks].reverse()) {
+    const at = out.lastIndexOf(tbl);
+    if (at === -1) continue;
+    out = out.slice(0, at) + fn(tbl) + out.slice(at + tbl.length);
+  }
+  return out;
+}
+
+/**
+ * 셀 안의 <p>를 <br/>로 풀어 셀이 비지 않게 한다.
+ *
+ * 셀을 정규식 하나로 잡으면 셀 안에 표가 들어 있을 때 바깥 셀의 끝을 안쪽 셀의 </td>로
+ * 착각해 태그가 뒤엉킨 채 잘린다(= 표가 부서진다). 그래서 깊이를 세어 셀을 정확히 잘라내고,
+ * 안에 표를 품은 셀은 건드리지 않는다. 그 안쪽 표의 셀은 재귀로 따로 처리한다.
+ */
+function flattenCellParagraphs(html: string): string {
+  const cells = scanBlocks(html, "<td", "</td>").concat(
+    scanBlocks(html, "<th", "</th>")
+  );
+  if (cells.length === 0) return html;
+
+  let out = html;
+  for (const cell of [...cells].reverse()) {
+    const at = out.lastIndexOf(cell);
+    if (at === -1) continue;
+    const close = cell.startsWith("<th") ? "</th>" : "</td>";
+    const openEnd = cell.indexOf(">") + 1;
+    const open = cell.slice(0, openEnd);
+    const inner = cell.slice(openEnd, cell.length - close.length);
+
+    const next = /<table\b/.test(inner)
+      ? // 표를 품은 셀: 문단을 풀면 구조가 깨지므로 안쪽만 재귀로 처리
+        open + flattenCellParagraphs(inner) + close
+      : open +
+        inner
+          .replace(/<p[^>]*>/g, "")
+          .replace(/<\/p>\s*(?=<p|$)/g, "<br/>")
+          .replace(/<\/p>/g, "<br/>")
+          .replace(/(<br\/>)+$/g, "") +
+        close;
+
+    out = out.slice(0, at) + next + out.slice(at + cell.length);
+  }
+  return out;
+}
+
 // mammoth가 만든 HTML을 hwp-convert에 맞게 보강한다.
 // (순수 문자열 처리 — node 테스트에서도 동일하게 사용)
 export function prepareHtmlForHwpx(
@@ -727,18 +860,11 @@ export function prepareHtmlForHwpx(
     );
 
   // 셀 안의 문단(<p>)을 줄바꿈으로 풀어준다 — 셀 내용이 비는 것 방지
-  out = out.replace(/<(td|th)([^>]*)>([\s\S]*?)<\/\1>/g, (_m, tag, attrs, inner) => {
-    const flattened = inner
-      .replace(/<p[^>]*>/g, "")
-      .replace(/<\/p>\s*(?=<p|$)/g, "<br/>")
-      .replace(/<\/p>/g, "<br/>")
-      .replace(/(<br\/>)+$/g, "");
-    return `<${tag}${attrs}>${flattened}</${tag}>`;
-  });
+  out = flattenCellParagraphs(out);
 
   // 변환 엔진이 표 셀 안의 이미지를 지원하지 않으므로,
   // 셀 안의 이미지를 해당 표 바로 뒤로 꺼내 별도 문단으로 배치한다.
-  out = out.replace(/<table[^>]*>[\s\S]*?<\/table>/g, (tbl) => {
+  out = replaceTopLevelTables(out, (tbl) => {
     const imgs = tbl.match(/<img[^>]*>/g) || [];
     if (imgs.length === 0) return tbl;
     const stripped = tbl.replace(/<img[^>]*>/g, "");

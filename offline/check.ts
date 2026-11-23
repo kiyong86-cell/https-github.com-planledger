@@ -13,6 +13,7 @@ import {
   applyPageBreaks,
   applyParaBorders,
   bannerHtml,
+  prepareHtmlForHwpx,
   BLANK_LINE,
 } from "../src/lib/docxToHwpx";
 import { buildPlanHtml } from "../src/lib/hwpExport";
@@ -310,6 +311,96 @@ run("기획안: 부제목 구분선 글자가 실제 문단 글자와 같다", (
   // HTML에서 태그를 걷어낸 결과 안에 그 글자가 있어야 문단을 찾을 수 있다
   const plain = html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ");
   assert.ok(plain.includes(sub.text), `문단을 못 찾을 글자다: ${sub.text}`);
+});
+
+// ── 표 구조 회귀 점검 ───────────────────────────────────────────
+// Word는 세로병합 이어짐 셀을 <w:vMerge w:val="continue"/>로 쓴다.
+// 이걸 셀로 세면 그 행의 뒤쪽 색·정렬이 한 칸씩 밀려 표가 어그러진다.
+const vMergeXml =
+  `<w:tbl><w:tr>` +
+  `<w:tc><w:vMerge w:val="restart"/><w:t>세로</w:t></w:tc>` +
+  `<w:tc><w:t>윗-가운데</w:t></w:tc>` +
+  `</w:tr><w:tr>` +
+  `<w:tc><w:vMerge w:val="continue"/><w:t></w:t></w:tc>` +
+  `<w:tc><w:shd w:fill="C6E0B4"/><w:t>초록칸</w:t></w:tc>` +
+  `</w:tr></w:tbl>`;
+
+run("세로병합: continue 셀은 세지 않는다", () => {
+  const styles = extractTableCellStyles(vMergeXml);
+  assert.strictEqual(styles[0][1].length, 1); // 둘째 행에서 보이는 셀은 1개
+  assert.strictEqual(styles[0][1][0].fill, "C6E0B4");
+});
+
+run("세로병합: 색이 제 칸에 들어간다", () => {
+  const html = applyTableCellStyles(
+    "<table><tr><td rowspan=\"2\">세로</td><td>윗-가운데</td></tr>" +
+      "<tr><td>초록칸</td></tr></table>",
+    extractTableCellStyles(vMergeXml)
+  );
+  const greenCell = html.match(/<td[^>]*background-color:#C6E0B4[^>]*>([^<]*)/);
+  assert.ok(greenCell, "색칠된 셀이 없다");
+  assert.strictEqual(greenCell![1], "초록칸");
+});
+
+// 표 안에 표가 있으면, 옛 코드는 바깥 표의 끝을 안쪽 </table>로 착각해
+// 뒤 표들의 서식이 엉뚱한 표로 옮겨붙었다.
+const nestedXml =
+  `<w:tbl><w:tr>` +
+  `<w:tc><w:t>바깥</w:t></w:tc>` +
+  `<w:tc><w:tbl><w:tr><w:tc><w:shd w:fill="111111"/><w:t>속표</w:t></w:tc></w:tr></w:tbl></w:tc>` +
+  `</w:tr></w:tbl>` +
+  `<w:tbl><w:tr><w:tc><w:shd w:fill="222222"/><w:t>뒤표</w:t></w:tc></w:tr></w:tbl>`;
+
+run("중첩 표: 표마다 제 차례를 받는다", () => {
+  const styles = extractTableCellStyles(nestedXml);
+  assert.strictEqual(styles.length, 3); // 바깥, 속표, 뒤표
+  assert.strictEqual(styles[0][0].length, 2); // 바깥 표의 자기 행은 셀 2개
+  assert.strictEqual(styles[1][0][0].fill, "111111");
+  assert.strictEqual(styles[2][0][0].fill, "222222");
+});
+
+run("중첩 표: 서식이 다른 표로 새지 않는다", () => {
+  const html = applyTableCellStyles(
+    "<table><tr><td>바깥</td><td><table><tr><td>속표</td></tr></table></td></tr></table>" +
+      "<table><tr><td>뒤표</td></tr></table>",
+    extractTableCellStyles(nestedXml)
+  );
+  assert.match(html, /background-color:#111111[^>]*>속표/);
+  assert.match(html, /background-color:#222222[^>]*>뒤표/);
+});
+
+run("중첩 표: 셀 안 문단을 풀어도 표 구조가 남는다", () => {
+  const out = prepareHtmlForHwpx(
+    "<table><tr><td><p>바깥</p><table><tr><td><p>속표</p></td></tr></table></td></tr></table>"
+  );
+  // 태그 짝이 맞아야 한글이 표로 읽는다
+  assert.strictEqual((out.match(/<table/g) || []).length, 2);
+  assert.strictEqual((out.match(/<\/table>/g) || []).length, 2);
+  assert.strictEqual((out.match(/<td/g) || []).length, 2);
+  assert.strictEqual((out.match(/<\/td>/g) || []).length, 2);
+  assert.ok(out.includes("속표"));
+  assert.ok(out.includes("바깥"));
+});
+
+run("표 안 이미지는 표 뒤로 빠지고 표는 멀쩡하다", () => {
+  const out = prepareHtmlForHwpx(
+    '<table><tr><td><img src="x"/>칸</td></tr></table><p>뒤 문단</p>'
+  );
+  assert.ok(out.indexOf("<img") > out.indexOf("</table>"), "이미지가 표 안에 남았다");
+  assert.strictEqual((out.match(/<table/g) || []).length, 1);
+  assert.ok(out.includes("뒤 문단"));
+});
+
+run("표 안 문단은 본문 정렬에 끌려가지 않는다 (중첩 표 포함)", () => {
+  const html =
+    "<p>제목</p><table><tr><td><p>제목</p><table><tr><td><p>속</p></td></tr></table></td></tr></table>";
+  const out = applyBodyAligns(html, [{ text: "제목", align: "center" }]);
+  // 표가 통째로 되돌아와야 한다
+  assert.strictEqual((out.match(/<table/g) || []).length, 2);
+  assert.strictEqual((out.match(/<\/table>/g) || []).length, 2);
+  assert.ok(!out.includes("TBL"));
+  // 가운데 정렬은 표 밖 문단 하나에만 붙는다
+  assert.strictEqual((out.match(/text-align:center/g) || []).length, 1);
 });
 
 console.log("전부 통과");
